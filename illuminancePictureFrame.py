@@ -23,10 +23,19 @@ class illuminancePictureFrame(tk.Frame):
 
         self.binder = None              # Gestor de eventos
 
-        self.currentMaterial = 0        # Materiales: 0,1,2,3
-        self.materialColor = ["green","blue","gray","white"]
+        self.currentMaterial = 0        # Materiales: 0,1,2,3,4,5,6
+        self.materialColor = ["blue","red","orange","yellow","white","green", "purple"]
+        
+        # Cielo: Azul
+        # Calzada: rojo
+        # Rocas: naranja
+        # Edificios: Amarillo
+        # Nieve: Blanco
+        # Prados: Verde
+        # Tunel: Violeta
+
         self.widowsSizeX=800
-        self.widowsSizeY=800
+        self.widowsSizeY=600
 
         #Offset del centro de la grilla de la imagen
         self.gridCenterOffsetX = 0
@@ -34,6 +43,7 @@ class illuminancePictureFrame(tk.Frame):
         #Datos de los circulos
         super().__init__(width=800, height=800)
         self.circleQuantity = 5
+        self.halfAngleQuantity = 6 
         self.circleSize = 225
         self.interiorCircleRadius = 50
         self.circlesRadiusArray = [0 for i in range(50)]
@@ -41,13 +51,15 @@ class illuminancePictureFrame(tk.Frame):
         # Estructura de datos con los circulos a dibujar
         self.circles = [None for i in range(50)]
         # Estructura de datos con las rectas a dibujar
-        self.lines = [None for i in range(10)]
+        self.lines = [None for i in range(30)]
         # Estructura de datos con los indicadores de areas
-        self.areaIndicators =  [[None for i in range(12)] for j in range(50)]
+        self.areaIndicators =  [[None for i in range(50)] for j in range(50)]
 
         # Matriz con la informacion de cada area
         # [anillo][arco], [radio][radianes]
-        self.areaMatrix = [[None for i in range(12)] for j in range(50)]
+        self.areaMatrix = [[None for i in range(50)] for j in range(50)]
+
+        self.renderedTunnelImage = None
 
 
 
@@ -55,14 +67,9 @@ class illuminancePictureFrame(tk.Frame):
     def initUI(self):
         # Canvas para dibujo de circulos
 
-        self.myCanvas = tk.Canvas(self, width=self.widowsSizeX, height=self.widowsSizeY, borderwidth=0, highlightthickness=0, )
+        self.myCanvas = tk.Canvas(self, width=self.widowsSizeX, height=self.widowsSizeY, borderwidth=0, highlightthickness=0,background="black" )
 
-        # Cargar imagen:
-
-        tunnelImage = Image.open("image.jpg")
-        size = self.widowsSizeX, (int)((self.widowsSizeX/16)*9)
-        tunnelImage = tunnelImage.resize(size, Image.ANTIALIAS)    
-        self.renderedTunnelImage = ImageTk.PhotoImage(tunnelImage)
+        self.loadImage("image.jpg",escalate=True)
 
         self.drawImage()
         self.drawInnerCircle()
@@ -75,6 +82,33 @@ class illuminancePictureFrame(tk.Frame):
         self.myCanvas.place(x = self.winfo_rootx(), y=self.winfo_rooty())
         self.myCanvas.pack()
         
+    def loadImage(self,route="image.jpg",escalate=False):
+
+        # Catch_try TODO
+        # Cargar imagen:
+        tunnelImage = Image.open(route)
+
+        
+        # Bloque peligroso, escalado implica errores de distoricion en la imagen
+
+        if(escalate):
+            print("ancho: " + str(tunnelImage.width))
+            print("altura: " + str(tunnelImage.height))
+            
+            if(tunnelImage.width<self.widowsSizeX):
+                size = self.widowsSizeX,(int)((self.widowsSizeX*tunnelImage.height)/tunnelImage.width)
+                tunnelImage = tunnelImage.resize(size, Image.ANTIALIAS)
+                print("Imagen pequeña")
+
+            else:
+                size = self.widowsSizeX, self.widowsSizeY
+                tunnelImage.thumbnail(size,Image.ANTIALIAS)
+                print("Imagen grande")
+        
+
+        print("ancho: " + str(tunnelImage.width))
+        print("altura: " + str(tunnelImage.height))    
+        self.renderedTunnelImage = ImageTk.PhotoImage(tunnelImage)
 
     def drawImage(self):
         # Dibujar Imagen        
@@ -86,7 +120,7 @@ class illuminancePictureFrame(tk.Frame):
     def drawInnerCircle(self):
         if(self.circles[0] != None):
             self.myCanvas.delete(self.circles[0])
-        self.circles[0] = self.create_circle(self.widowsSizeX/2 + self.gridCenterOffsetX, self.widowsSizeY/2 + self.gridCenterOffsetY,self.interiorCircleRadius, "green" ,self.myCanvas)
+        self.circles[0] = self.create_circle(self.widowsSizeX/2 + self.gridCenterOffsetX, self.widowsSizeY/2 + self.gridCenterOffsetY,self.interiorCircleRadius, "white" ,self.myCanvas)
 
     def drawCircles(self):
         # Dibujar circulos:
@@ -99,21 +133,24 @@ class illuminancePictureFrame(tk.Frame):
             if(self.circles[i+1] != None):
                 print(i)
                 self.myCanvas.delete(self.circles[i+1])
-            self.circles[i+1]=self.create_circle(self.widowsSizeX/2 + self.gridCenterOffsetX, self.widowsSizeY/2 + self.gridCenterOffsetY,self.circlesRadiusArray[i+1], "green",self.myCanvas)
+            self.circles[i+1]=self.create_circle(self.widowsSizeX/2 + self.gridCenterOffsetX, self.widowsSizeY/2 + self.gridCenterOffsetY,self.circlesRadiusArray[i+1], "white",self.myCanvas)
                
-    def drawLines(self):   
+    def drawLines(self): 
+
+
         # Dibujar rectas
-        for i in range(6):
+
+        for i in range(self.halfAngleQuantity):
             R = self.circleSize 
-            x = R*math.cos(i*(math.pi/6))
-            y = R*math.sin(i*(math.pi/6))
+            x = R*math.cos(i*(math.pi/self.halfAngleQuantity))
+            y = R*math.sin(i*(math.pi/self.halfAngleQuantity))
             x1= self.widowsSizeX/2 + self.gridCenterOffsetX + x
             y1= self.widowsSizeY/2 + self.gridCenterOffsetY + y
             x2= self.widowsSizeX/2 + self.gridCenterOffsetX - x
             y2= self.widowsSizeY/2 + self.gridCenterOffsetY - y
             if(self.lines[i] != None):
                 self.myCanvas.delete(self.lines[i])
-            self.lines[i]= (self.myCanvas.create_line(x1, y1, x2, y2 ,width=2, fill = "white")) 
+            self.lines[i]= (self.myCanvas.create_line(x1, y1, x2, y2 ,width=1, fill = "white")) 
 
 
     def clearALL(self):
@@ -121,13 +158,13 @@ class illuminancePictureFrame(tk.Frame):
         # Estructura de datos con los circulos a dibujar
         self.circles = [None for i in range(50)]
         # Estructura de datos con las rectas a dibujar
-        self.lines = [None for i in range(10)]
+        self.lines = [None for i in range(30)]
         # Estructura de datos con los indicadores de areas
-        self.areaIndicators =  [[None for i in range(12)] for j in range(50)]
+        self.areaIndicators =  [[None for i in range(50)] for j in range(50)]
 
         # Matriz con la informacion de cada area
         # [anillo][arco], [radio][radianes]
-        self.areaMatrix = [[None for i in range(12)] for j in range(50)]
+        self.areaMatrix = [[None for i in range(50)] for j in range(50)]
 
 
 
@@ -138,18 +175,33 @@ class illuminancePictureFrame(tk.Frame):
         print(event.y)
 
 
-    def reset(self):
+    def reset(self, route="image.jpg", escalate = False):
         self.clearALL()
         if self.binder != None:
             self.myCanvas.unbind("<Button-1>",self.binder)
             self.binder = None
+        self.loadImage(route,escalate = escalate)
         self.drawImage()
+        
         
 
         
 
     def firsStep(self , newGridCenterOffsetX=0, newGridCenterOffsetY=0, newInteriorCircleRadius=50, SD=100, entranceRadiusMeters = 5):
         
+        # Desactivar seleccion de colores
+        if self.binder != None:
+            self.myCanvas.unbind("<Button-1>",self.binder)
+            self.binder = None
+            # Desdibujar indicadores de area y sus valores
+            for i in range(50):
+                for j in range(50):
+                    self.areaMatrix[i][j] = None
+                    if self.areaIndicators[i][j] != None:
+                        self.myCanvas.delete(self.areaIndicators[i][j])
+                    self.areaIndicators[i][j] = None
+
+
         self.gridCenterOffsetX = newGridCenterOffsetX
         self.gridCenterOffsetY = newGridCenterOffsetY
         self.interiorCircleRadius = newInteriorCircleRadius
@@ -158,8 +210,23 @@ class illuminancePictureFrame(tk.Frame):
         self.drawInnerCircle()
 
 
-    def secondStep(self, newCircleQuantity = 8):
+    def secondStep(self, newCircleQuantity = 8, newhalfAngleQuantity=12):
+
+        # Desactivar seleccion de colores
+        if self.binder != None:
+            self.myCanvas.unbind("<Button-1>",self.binder)
+            self.binder = None
+            # Desdibujar indicadores de area y sus valores
+            for i in range(50):
+                for j in range(50):
+                    self.areaMatrix[i][j] = None
+                    if self.areaIndicators[i][j] != None:
+                        self.myCanvas.delete(self.areaIndicators[i][j])
+                    self.areaIndicators[i][j] = None
+                
+
         self.circleQuantity = newCircleQuantity
+        self.halfAngleQuantity = newhalfAngleQuantity
         self.drawCircles()
         self.drawLines() 
 
@@ -196,9 +263,9 @@ class illuminancePictureFrame(tk.Frame):
 
             #Region del angulo
             ThetaRegion=0
-            for i in range(12):
-                if(Theta<((12-i)*(math.pi/6))):
-                    ThetaRegion=11-i
+            for i in range(2*self.halfAngleQuantity):
+                if(Theta<(((self.halfAngleQuantity*2)-i)*(math.pi/self.halfAngleQuantity))):
+                    ThetaRegion=(2*self.halfAngleQuantity)-1-i
 
             #Region del radio
             rRegion=0
@@ -215,9 +282,9 @@ class illuminancePictureFrame(tk.Frame):
             ThetaPos=0
             RPos=0
             if(ThetaRegion==0):
-                ThetaPos=(math.pi/6)/2
+                ThetaPos=(math.pi/self.halfAngleQuantity)/2
             else:
-                ThetaPos=(((ThetaRegion+1)*(math.pi/6)-((ThetaRegion)*(math.pi/6)))/2) + ((ThetaRegion)*(math.pi/6))
+                ThetaPos=(((ThetaRegion+1)*(math.pi/self.halfAngleQuantity)-((ThetaRegion)*(math.pi/self.halfAngleQuantity)))/2) + ((ThetaRegion)*(math.pi/self.halfAngleQuantity))
 
             if(rRegion==0):
                 RPos=3*((self.circlesRadiusArray[rRegion])/4) 
@@ -272,29 +339,70 @@ class illuminancePictureFrame(tk.Frame):
             self.myCanvas.unbind("<Button-1>",self.binder)
         self.binder= self.myCanvas.bind("<Button-1>",self.markArea) 
         
-        if(self.currentMaterial<3):
+        if(self.currentMaterial<6):
             self.currentMaterial += 1
         else:
             self.currentMaterial = 0
     
-    
+    def fillGrid(self, material=0):
+        # Desactivar seleccion de colores
+        if self.binder != None:
+            self.myCanvas.unbind("<Button-1>",self.binder)
+            self.binder = None
+        # Desdibujar indicadores de area y sus valores
+        for i in range(50):
+            for j in range(50):
+                self.areaMatrix[i][j] = None
+                if self.areaIndicators[i][j] != None:
+                    self.myCanvas.delete(self.areaIndicators[i][j])
+                self.areaIndicators[i][j] = None
+
+
+        for i in range(self.circleQuantity):
+            for j in range(2*self.halfAngleQuantity):
+                ThetaPos=0
+                RPos=0
+                if(j==0):
+                    ThetaPos=(math.pi/self.halfAngleQuantity)/2
+                else:
+                    ThetaPos=(((j+1)*(math.pi/self.halfAngleQuantity)-((j)*(math.pi/self.halfAngleQuantity)))/2) + ((j)*(math.pi/self.halfAngleQuantity))
+
+                if(i==0):
+                    RPos=3*((self.circlesRadiusArray[i])/4) 
+                else:
+                    RPos=((self.circlesRadiusArray[i]-self.circlesRadiusArray[i-1])/2) +self.circlesRadiusArray[i-1]
+
+                print("ThetaPos: " +str(ThetaPos))
+                print("RPos: " + str(RPos))
+
+                # conversion coordenadas polares a cartesianas
+                xPos = (RPos * math.cos(ThetaPos)) + self.widowsSizeX/2 + self.gridCenterOffsetX
+                yPos = -(RPos * math.sin(ThetaPos)) + self.widowsSizeY/2 + self.gridCenterOffsetY
+                
+                
+                
+                self.areaIndicators[i][j]=(self.create_circle(xPos, yPos, 5,self.materialColor[self.currentMaterial] ,self.myCanvas))
+               
+                self.areaMatrix[i][j] = (self.getArea(i),material)   
+
+
     def getTotalAreas(self, percentageArray):
-        partialAreasArray =[0 for i in range(4)]
+        partialAreasArray =[0 for i in range(7)]
         
         totalArea = math.pi*pow(self.circleSize,2)
 
         for i in range(self.circleQuantity):
-            for j in range(12):
+            for j in range(2*self.halfAngleQuantity):
                 if(self.areaMatrix[i][j] != None):
                     partialAreasArray[self.areaMatrix[i][j][1]] += self.areaMatrix[i][j][0]
         
             
         print(totalArea)
         print(partialAreasArray)
-        print(int(partialAreasArray[0]+partialAreasArray[1]+partialAreasArray[2]+partialAreasArray[3]))
+        print(int(partialAreasArray[0]+partialAreasArray[1]+partialAreasArray[2]+partialAreasArray[3]+partialAreasArray[4]+partialAreasArray[5]+partialAreasArray[6]))
         print(int(totalArea))
 
-        if(int(totalArea) != int(partialAreasArray[0]+partialAreasArray[1]+partialAreasArray[2]+partialAreasArray[3])):
+        if(int(totalArea) != int(partialAreasArray[0]+partialAreasArray[1]+partialAreasArray[2]+partialAreasArray[3]+partialAreasArray[4]+partialAreasArray[5]+partialAreasArray[6])):
             print("!ERROR: no ha seleccionado todas las areas")
 
             mb.showerror("ERROR","Asegúrese de que selecciono todas las áreas de la imagen")
@@ -303,10 +411,14 @@ class illuminancePictureFrame(tk.Frame):
             percentageArray[1] = partialAreasArray[1]/totalArea
             percentageArray[2] = partialAreasArray[2]/totalArea
             percentageArray[3] = partialAreasArray[3]/totalArea
+            percentageArray[4] = partialAreasArray[4]/totalArea
+            percentageArray[5] = partialAreasArray[5]/totalArea
+            percentageArray[6] = partialAreasArray[6]/totalArea
+
             
             print("CORRECTO:")
             print(percentageArray)
-            print(percentageArray[0]+percentageArray[1]+percentageArray[2]+percentageArray[3])
+            print(percentageArray[0]+percentageArray[1]+percentageArray[2]+percentageArray[3]+percentageArray[4]+percentageArray[5]+percentageArray[6])
 
 
 
@@ -314,9 +426,9 @@ class illuminancePictureFrame(tk.Frame):
     def getArea(self,rRegion):
         area = 0    
         if(rRegion == 0):
-            area = pow(self.circlesRadiusArray[0],2)*((math.pi/6)/2)
+            area = pow(self.circlesRadiusArray[0],2)*((math.pi/self.halfAngleQuantity)/2)
         else:
-            area = (pow(self.circlesRadiusArray[rRegion],2)-pow(self.circlesRadiusArray[rRegion-1],2))*((math.pi/6)/2)
+            area = (pow(self.circlesRadiusArray[rRegion],2)-pow(self.circlesRadiusArray[rRegion-1],2))*((math.pi/self.halfAngleQuantity)/2)
         print("Area: " + str(area))
         return area
     def create_circle(self,x, y, r, color, canvasName): #center coordinates, radius
@@ -324,7 +436,7 @@ class illuminancePictureFrame(tk.Frame):
         y0 = y - r
         x1 = x + r
         y1 = y + r
-        return canvasName.create_oval(x0, y0, x1, y1, width=2, outline = color)
+        return canvasName.create_oval(x0, y0, x1, y1, width=1, outline = color)
 
 
 class Application(tk.Frame):
@@ -341,13 +453,13 @@ class Application(tk.Frame):
         #Frame importante
         Frame1 = illuminancePictureFrame()
         Frame1.grid( row = 0, column = 0,rowspan = 3, columnspan = 6, sticky = tk.W+tk.E+tk.N+tk.S)
-        array = [0,0,0,0]
+        array = [0,0,0,0,0,0,0]
         #Botones
         functions = [None for i in range(6)]
-        functions[0] = lambda: Frame1.reset()
+        functions[0] = lambda: Frame1.reset(escalate=True)
         functions[1] = lambda: Frame1.firsStep()
         functions[2] = lambda: Frame1.secondStep()
-        functions[3] = lambda: Frame1.thirdStep()
+        functions[3] = lambda: Frame1.fillGrid()
         functions[4] = lambda: Frame1.selectMaterial1()
         functions[5] = lambda: Frame1.getTotalAreas(array)
         names = [None for i in range(6)]
@@ -355,7 +467,7 @@ class Application(tk.Frame):
         names[0] = "Reiniciar"
         names[1] = "Circulo Interno"
         names[2] = "Grilla"
-        names[3] = "Habilitar seleccion" 
+        names[3] = "llenar grilla" 
         names[4] = "Seleccionar material" 
         names[5] = "Calcular porcentajes" 
 
@@ -380,3 +492,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# Rocas
+# Construcciones
+# Nieve
