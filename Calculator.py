@@ -131,9 +131,9 @@ class calculator():
         print("Lth: " + str(self.Lth))
 
 #---SECOND-PHASE-LUMINANCE---------------------------------------------------------------------------------------------------------------------------------------
-    def secondPhaseReset(self,luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 90):
+    def secondPhaseReset(self,luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 90, Fm= 0.5):
         
-        
+        self.Fm = Fm
         self.luminairesHeight = luminairesHeight                            
         self.luminairesBetweenDistance = luminairesBetweenDistance          
         self.roadWidth = roadWidth
@@ -142,15 +142,17 @@ class calculator():
         self.getMeshPoints()
         self.getGammaCCoordinates()
 
-        self.loadIES(loadFile = True, route = "sit.ies")
         try:
-            #self.loadIES(loadFile = True)
+            self.loadIES(loadFile = True, route = "Sit4.ies")
             self.getstepGammaCeL()
-            self.illuminanceFirstStep()
+            self.luminanceFirstStep()
+            self.luminanceSecondStep()
         except:
             mb.showerror("ERROR","No se pudo completar apropiadamente el proceso de calculo.")
             pass    
-
+        
+        self.luminanceThirdStep()
+        self.luminanceFourthStep()
 
     def printSencondPhaseData(self):
         print("Px: ")
@@ -184,16 +186,16 @@ class calculator():
         self.N = N
 
     def getGammaCCoordinates(self):
-        Nlumback=int((5*self.luminairesHeight)/self.luminairesBetweenDistance);
-        Nlumfor=int((12*self.luminairesHeight)/self.luminairesBetweenDistance)+1;
-        Nlum=Nlumback+Nlumfor+1;
+        Nlumback=int((5*self.luminairesHeight)/self.luminairesBetweenDistance)
+        Nlumfor=int((12*self.luminairesHeight)/self.luminairesBetweenDistance)+1
+        Nlum=Nlumback+Nlumfor+1
 
         Ly = [0 for i in range(Nlum)]
         Lx = [0 for i in range(Nlum)]
 
         for i in range(Nlum):    
-            Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance;
-            Ly[i] = 0;
+            Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+            Ly[i] = 0
         
 
         #print("self.Px")
@@ -202,8 +204,8 @@ class calculator():
         #print(self.Py)
 
 
-        CeL = np.zeros((3*self.roadLanes, self.N, Nlum))
-        GammaL = np.zeros((3*self.roadLanes, self.N, Nlum))
+        CeL = np.zeros((Nlum, self.N, 3*self.roadLanes))
+        GammaL = np.zeros((Nlum, self.N, 3*self.roadLanes))
 
         for i in range(Nlum):
             for j in range(self.N):
@@ -218,7 +220,7 @@ class calculator():
         self.CeL = CeL
         self.GammaL = GammaL 
         self.Nlum = Nlum
-        
+        self.Nlumback = Nlumback
         #print("CeL")
         #print(CeL)
         #print("GammaL")
@@ -226,8 +228,12 @@ class calculator():
 
 
 
-    def loadIES(self, loadFile = True, route = "Sit4.ies"):
+    def loadIES(self, loadFile = True, route = "Sit4.ies", StepGamma = 5, StepC=10, rotationAngle=0):
         if(loadFile):
+
+            
+            self.StepGamma=StepGamma
+            self.StepC=StepC
             class tiltUnsupportedError(Exception):
                 pass
             class corruptFile(Exception):
@@ -289,16 +295,12 @@ class calculator():
 
                 for j in range(rawCSize):
                     for k in range(rawGammaSize):
-                        #print("j: " + str(j))
-                        #print("k: " + str(k))
-                        #print("index: " + str(i+(rawCSize*j)+k))
-                        #print("value: " + str(float(iesText[i+(rawCSize*j)+k])*luxMultiplier))
-                        rawIES[j][k] = float(iesText[i+(rawCSize*j)+k])*luxMultiplier
+                        #print("j: " + str(j) + ", k: " + str(k))
+                        #print("index: " + str(i+(rawGammaSize*j)+k) +", value: " + str(float(iesText[i+(rawGammaSize*j)+k])*luxMultiplier))
+                        rawIES[j][k] = float(iesText[i+(rawGammaSize*j)+k])*luxMultiplier
 
                 # Interpolation:
 
-                self.StepGamma=5
-                self.StepC=10
                 preRotationIESGammaSize = int((180/self.StepGamma)+1)
                 preRotationIESCSize = int((360/self.StepC)+1)
                 
@@ -306,15 +308,70 @@ class calculator():
                 rawGammaFSO = rawGammaIndex[len(rawGammaIndex)-1]-rawGammaIndex[0]  
                 rawCFSO = rawCIndex[len(rawCIndex)-1]-rawCIndex[0]
 
+                #print("rawIES")
+                #print(rawIES)
+
                 # Type 3 photometry symmetry
-                if(rawCFSO == 0 ):
+
+                ## Indexes and sizes
+                auxIESCSize = int((360/(self.StepC))+1)
+                if(rawCFSO == 0):
                     auxIESCSize = int((360/(self.StepC))+1)
+                    auxCIndex =  np.zeros((auxIESCSize))
+                    for j in range(auxIESCSize):
+                        auxCIndex[j] = j*self.StepC
+
+                elif(rawCFSO <=90):
+                    auxIESCSize = 4*(len(rawCIndex)-1)+1
+                    #print("auxIESCSize: " + str(auxIESCSize))
+                    auxCIndex = np.zeros((auxIESCSize))
+
+                    for j in range(auxIESCSize):
+                        #print("j: " + str(j))
+                        if(j < (rawCSize-1)):
+                            auxCIndex[j] = rawCIndex[j]
+                        elif(j < 2*(rawCSize-1)):
+                            auxCIndex[j] = rawCIndex[j-rawCSize+1]+90
+                        elif(j < 3*(rawCSize-1)):
+                            auxCIndex[j] = rawCIndex[j-(2*(rawCSize-1))]+180
+                        else:
+                            auxCIndex[j] = rawCIndex[j-(3*(rawCSize-1))]+270
+  
+
+                elif(rawCFSO <=180):                    
+                    auxIESCSize = 2*(len(rawCIndex)-1)+1
+                    auxCIndex = np.zeros((auxIESCSize))
+
+                    for j in range(auxIESCSize):
+                        if(j < (rawCSize-1)):
+                            auxCIndex[j] = rawCIndex[j]
+                        else:
+                            auxCIndex[j] = rawCIndex[j-rawCSize+1]+180
+                
+                elif(rawCFSO <=360):
+                    auxIESCSize = len(rawCIndex)
+                    auxCIndex = rawCIndex
+
+                if(rawGammaFSO == 90):
+                    auxIESGammaSize = 2*(len(rawGammaIndex)-1)+1
+                    auxGammaIndex = np.zeros((auxIESGammaSize))
+
+                    for j in range(auxIESGammaSize):
+                        if(auxGammaIndex[j] <= 90):
+                            auxGammaIndex[j] = rawGammaIndex[j]
+                        else:
+                            auxGammaIndex[j] = rawGammaIndex[j-rawGammaSize]+90
                 else:
-                    auxIESCSize = int((360/(rawCIndex[1]-rawCIndex[0]))+1)
+                    auxIESGammaSize = len(rawGammaIndex)
+                    auxGammaIndex = rawGammaIndex
 
-                auxIESGammaSize = int((180/(rawGammaIndex[1]-rawGammaIndex[0]))+1)
+                       
+                #print("auxCIndex")
+                #print(auxCIndex)                
+
+
+
                 auxIES = np.zeros((auxIESCSize, auxIESGammaSize))
-
                 if(photometricType == 1):
                     # Gamma
                     if(int(rawGammaIndex[0]) == 0 and  int(rawGammaIndex[len(rawGammaIndex)-1]) == 90):
@@ -335,51 +392,210 @@ class calculator():
                     #print(auxIES)
                     #print("auxIESCSize: " + str(auxIESCSize))
                     #print("auxIESGammaSize: " + str(auxIESGammaSize))
-                    # C 
 
-                    if(rawCFSO == 0):                                                           # CSize = 0, replication
-                        rawCIndex =  np.zeros((auxIESCSize))
+                    
+                    # C
+                    #print("auxIES") 
+                    #print(auxIES)
+                    if(rawCFSO == 0):                                                           # CSize = 0, replication                        
+                        
                         for j in range(auxIESCSize):
                             for k in range(auxIESGammaSize):
                                 auxIES[j][k] = auxIES[0][k]
-                                rawCIndex[j] = j*self.StepC
-                        print("rawCIndex")
-                        print(rawCIndex)
 
                     elif(rawCFSO == 90):                                                        # Csize = 90
+                        #print("auxIES_RLD:")
+
+                        # look for j index
+
+                        j90 = 0
+                        j180 = 0
+                        j360 = 0
+                        for j in range(auxIESCSize):
+                            if(auxCIndex[j] == 90):
+                                j90 = j
+                            elif(auxCIndex[j] == 180):
+                                j180 = j
+                            elif(auxCIndex[j] == 360):
+                                j360 = j
+                        # apply symmetry
+
                         for j in range(auxIESCSize):
                             for k in range(auxIESGammaSize):
-                                if(j<=  90):
+
+
+                                if(auxCIndex[j]<=90):
                                     auxIES[j][k] = auxIES[j][k]
-                                elif(j<=180):
-                                   auxIES[j][k] = auxIES[j][k] 
-                                
+                                elif(auxCIndex[j]<=180):
+                                    auxIES[j][k] = auxIES[j180-j][k]
+                                elif(auxCIndex[j]<=270):
+                                    auxIES[j][k] = auxIES[j-j180][k]
+                                elif(auxCIndex[j]<=360):
+                                    auxIES[j][k] = auxIES[j360-j][k]                      
+                        
+                            #print("indexC: " + str(auxCIndex[j]))
+                            #print("jindex" + str())
+                            #print(str(j) + ": auxIES:")
+                            #print(auxIES[j]) 
+
+                    elif(rawCFSO == 180):                                                        # Csize = 90
+                    
+                         # look for j index
+
+                        j360 = 0
+                        for j in range(auxIESCSize):
+                            if(auxCIndex[j] == 360):
+                                j360 = j
+                        # apply symmetry
+
+                        for j in range(auxIESCSize):
+                            for k in range(auxIESGammaSize):
+
+
+                                if(auxCIndex[j]<=180):
+                                    auxIES[j][k] = auxIES[j][k]
+                                else:
+                                    auxIES[j][k] = auxIES[j360-j][k]
+                           
+                        
+                            #print("indexC: " + str(auxCIndex[j]))
+                            #print("jindex: " + str(jindex))
+                            #print(str(j) + ": auxIES:")
+                            #print(auxIES[j]) 
+                    else:                                                                       # Cmax = 360
+                        pass
+
 
                     #print(auxIES)
 
+                # interpolation equation apply
 
+                print("preRotationIESCSize: " + str(preRotationIESCSize))
+                print("preRotationIESGammaSize: " + str(preRotationIESGammaSize))
                 for j in range(preRotationIESCSize):
-                    wantedC = j * self.StepGamma
+                    wantedC = j * self.StepC
                     for k in range(preRotationIESGammaSize):
-                        wantedGamma = k * self.StepC
-                        if wantedGamma in rawGammaIndex and wantedC in rawCIndex:               # Default case, Interpolation don't needed             
+                        wantedGamma = k * self.StepGamma                        
+                        if(rawCFSO == 0):                                                       # C = 0 case
+
+                            if(wantedGamma not in auxGammaIndex):
+                                # look for near index
+                                nearOverGammaIndex = 0
+                                for l in range(auxIESGammaSize):
+                                    if(auxGammaIndex[l]>wantedGamma):
+                                        nearOverGammaIndex = l
+                                        break
+                                m = (auxIES[0][nearOverGammaIndex] - auxIES[0][nearOverGammaIndex-1])/(auxGammaIndex[nearOverGammaIndex]-auxGammaIndex[nearOverGammaIndex-1])
+                                preRotationIES[j][k] =  (m * (wantedGamma-auxGammaIndex[nearOverGammaIndex-1])) + auxIES[0][nearOverGammaIndex-1]
+                            else:
+
+                                # look for k index
+                                for l in range(auxIESGammaSize):
+                                    if(auxGammaIndex[l]==wantedGamma):
+                                        nearOverGammaIndex = l
+                                        break
+                                preRotationIES[j][k] = auxIES[0][nearOverGammaIndex]
+
+                        elif wantedGamma in auxGammaIndex and wantedC in auxCIndex:               # Default case, Interpolation don't needed             
                             #print("wantedGamma: " + str(wantedGamma))
                             #print("wantedC: " + str(wantedC))
-                            preRotationIES[j][k] = auxIES[j][k]
-                        elif(True):
-                            pass
-                            #print("TODO")                                                                 
 
+                            # look for j index
+                            for l in range(auxIESCSize):
+                                if(auxCIndex[l]==wantedC):
+                                    nearOverCIndex = l
+                                    break
+                            # look for k index
+                            for l in range(auxIESGammaSize):
+                                if(auxGammaIndex[l]==wantedGamma):
+                                    nearOverGammaIndex = l
+                                    break
+
+                            preRotationIES[j][k] = auxIES[nearOverCIndex][nearOverGammaIndex]
+                        elif(wantedGamma not in auxGammaIndex and wantedC in auxCIndex):
+                            # look for j index
+                            for l in range(auxIESCSize):
+                                if(auxCIndex[l]==wantedC):
+                                    nearOverCIndex = l
+                                    break
+
+                            # look for near index
+                            nearOverGammaIndex = 0
+                            for l in range(auxIESGammaSize):
+                                if(auxGammaIndex[l]>wantedGamma):
+                                    nearOverGammaIndex = l
+                                    break
+                            m = (auxIES[nearOverCIndex][nearOverGammaIndex] - auxIES[nearOverCIndex][nearOverGammaIndex-1])/(auxGammaIndex[nearOverGammaIndex]-auxGammaIndex[nearOverGammaIndex-1])
+                            preRotationIES[j][k] =  (m * (wantedGamma-auxGammaIndex[nearOverGammaIndex-1])) + auxIES[nearOverCIndex][nearOverGammaIndex-1]
+                        
+                        elif(wantedGamma in auxGammaIndex and wantedC not in auxCIndex):
+                            # look for k index
+                            for l in range(auxIESGammaSize):
+                                if(auxGammaIndex[l]==wantedGamma):
+                                    nearOverGammaIndex = l
+                                    break
+
+                            # look for near index
+                            nearOverCIndex = 0
+                            for l in range(auxIESCSize):
+                                if(auxCIndex[l]>wantedC):
+                                    nearOverCIndex = l
+                                    break
+                            m = (auxIES[nearOverCIndex][nearOverGammaIndex] - auxIES[nearOverCIndex-1][nearOverGammaIndex])/(auxCIndex[nearOverCIndex]-auxCIndex[nearOverCIndex-1])
+                            preRotationIES[j][k] =  (m * (wantedC-auxCIndex[nearOverCIndex-1])) + auxIES[nearOverCIndex-1][nearOverGammaIndex]
+
+                        else:                                                                      # 2D Interpolation
+                            # look for near index
+                            nearOverGammaIndex = 0
+                            for l in range(auxIESGammaSize):
+                                if(auxGammaIndex[l]>wantedGamma):
+                                    nearOverGammaIndex = l
+                                    break
+                            nearOverCIndex = 0
+                            for l in range(auxIESCSize):
+                                if(auxCIndex[l]>wantedC):
+                                    nearOverCIndex = l
+                                    break 
+                            GammaO = auxGammaIndex[nearOverGammaIndex-1]   
+                            GammaF = auxGammaIndex[nearOverGammaIndex]
+                            CO = auxCIndex[nearOverCIndex-1]
+                            CF = auxCIndex[nearOverCIndex]
+                            GammaOx = nearOverGammaIndex-1   
+                            GammaFx = nearOverGammaIndex
+                            COx = nearOverCIndex-1
+                            CFx = nearOverCIndex    
+
+                            # Calculation 
                             
 
-                print("width: " + str(width))
-                print("length: " + str(length))
-                print("height: " + str(height))    
-                print("multiplier: " + str(luxMultiplier))
-                print(rawGammaIndex)
-                print(rawCIndex)
-                print(preRotationIES[0])
+                            m1 = (auxIES[COx][GammaFx] - auxIES[COx][GammaOx])/(GammaF-GammaO)
+                            IGiCO =  (m1 * (wantedGamma-GammaO)) + auxIES[COx][GammaOx]
 
+                            m2 = (auxIES[CFx][GammaFx] - auxIES[CFx][GammaOx])/(GammaF-GammaO)
+                            IGiCF =  (m1 * (wantedGamma-GammaO)) + auxIES[CFx][GammaOx]
+
+                            m = (IGiCF - IGiCO)/(CF-CO)
+                            preRotationIES[j][k] =  (m * (wantedC-CO)) + IGiCO
+
+                                                                      
+                if(rotationAngle == 0):
+                    IES=preRotationIES
+                else: 
+                    print("TODO")            
+
+                #print("width: " + str(width))
+                #print("length: " + str(length))
+                #print("height: " + str(height))    
+                #print("multiplier: " + str(luxMultiplier))
+                #print("rawGammaIndex: " + rawGammaIndex)
+                #print("rawCIndex: " + rawCIndex)
+                print("preRotationIES: ")
+                print(preRotationIES)
+
+                self.IES = IES 
+
+                print("IES: ")
+                print(IES)
 
             except FileNotFoundError:
                 mb.showerror("ERROR","Ruta no encontrada.")
@@ -410,51 +626,349 @@ class calculator():
     def getstepGammaCeL(self):
         # floor and ceil
         CL=self.CeL/self.StepC
-        self.CL=CL+1
-        self.CfL=np.floor(CL)
-        self.CcL=np.ceil(CL)
+        self.CL=CL
+        self.CfL=np.floor(self.CL)
+        self.CcL=np.ceil(self.CL)
         yL=self.GammaL/self.StepGamma
-        self.yL=yL+1
-        self.yfL=np.floor(yL)
-        self.ycL=np.ceil(yL)
+        self.yL=yL
+        self.yfL=np.floor(self.yL)
+        self.ycL=np.ceil(self.yL)
         
-        print()
-        #print("Cfl")
-        #print(CfL)
-        #print("CcL")
-        #print(CcL)
+        #print("yL")
+        #print(self.yL)        
+        #print("yfl")
+        #print(self.yfL)
+        #print("ycL")
+        #print(self.ycL)
     
-    # illuminance
+    # luminance
     
-    def illuminanceFirstStep(self):
-        IL = np.zeros((3*self.roadLanes, self.N, self.Nlum))
-        eq3 = np.zeros((3*self.roadLanes, self.N))
-        eq4 = np.zeros((3*self.roadLanes, self.N))
+    def luminanceFirstStep(self):
+        IL = np.zeros((self.Nlum, self.N, 3*self.roadLanes))
+        eq3 = np.zeros((self.N, 3*self.roadLanes))
+        eq4 = np.zeros((self.N, 3*self.roadLanes))
         #print(IL)
-        print("Ln: " + str(3*self.roadLanes))
-        print("N: " + str(self.N))
-        print("Nlum: " + str(self.Nlum))
-        print("IL shape: ")
-        print(IL.shape)
+        #print("luminanceFirstStep")
+        #print("Ln: " + str(3*self.roadLanes))
+        #print("N: " + str(self.N))
+        #print("Nlum: " + str(self.Nlum))
+        #print("IL shape: ")
+        #print(IL.shape)
 
-        print("eq3 shape: ")
-        print(eq3.shape)
-        print(len(eq3[0]))
+        #print("eq3 shape: ")
+        #print(eq3.shape)
+        #print(len(eq3[0]))
+
+        #print("IES shape: ")
+        #print(self.IES.shape)
+
+        #print("yfL shape: ")
+        #print(self.yfL.shape)
+        #print(self.yfL)
 
         
         for i in range(self.Nlum):
             for j in range(self.N):
                 for k in range(3*self.roadLanes):
-                    #print("i: " + str(i) + ", j: " + str(j) + ", k: " + str(k))
-                    eq3[k][j]=self.yfL[i][j][k]
-                    #print(c)
-                    #eq3[j][k]=self.IES[int(self.yfL[i][j][k])][int(self.CfL[i][j][k])]+((self.CL[i][j][k]-self.CfL[i][j][k])/(self.CcL[i][j][k]-self.CfL[i][j][k]))*(self.IES[int(self.yfL[i][j][k])][int(self.CcL[i][j][k])]-self.IES[int(self.yfL[i][j][k])][int(self.CfL[i][j][k])])
-                    #eq4[j][k]=self.IES[int(self.ycL[i][j][k])][int(self.CfL[i][j][k])]+((self.CL[i][j][k]-self.CfL[i][j][k])/(self.CcL[i][j][k]-self.CfL[i][j][k]))*(self.IES[int(self.ycL[i][j][k])][int(self.CcL[i][j][k])]-self.IES[int(self.ycL[i][j][k])][int(self.CfL[i][j][k])])
-                    #IL[i][j][k]=eq3[j][k]+((self.yL[i][j][k]-self.yfL[i][j][k])/(self.ycL[i][j][k]-self.yfL[i][j][k]))*(eq4[j][k]-eq3[j][k])      
                     
-        self.IL = IL
+                    eq3[j][k]=self.IES[int(self.CfL[i][j][k])][int(self.yfL[i][j][k])]+((self.CL[i][j][k]-self.CfL[i][j][k])/(self.CcL[i][j][k]-self.CfL[i][j][k]))*(self.IES[int(self.CcL[i][j][k])][int(self.yfL[i][j][k])]-self.IES[int(self.CfL[i][j][k])][int(self.yfL[i][j][k])])
+                    eq4[j][k]=self.IES[int(self.CfL[i][j][k])][int(self.ycL[i][j][k])]+((self.CL[i][j][k]-self.CfL[i][j][k])/(self.CcL[i][j][k]-self.CfL[i][j][k]))*(self.IES[int(self.CcL[i][j][k])][int(self.ycL[i][j][k])]-self.IES[int(self.CfL[i][j][k])][int(self.ycL[i][j][k])])
+                    IL[i][j][k]=eq3[j][k]+((self.yL[i][j][k]-self.yfL[i][j][k])/(self.ycL[i][j][k]-self.yfL[i][j][k]))*(eq4[j][k]-eq3[j][k])
+                    c = self.IES[int(self.CfL[i][j][k])][int(self.yfL[i][j][k])]
+                    
+                    #print("i: " + str(i) + ", j: " + str(j)+ ", k: " + str(k) + ", C: " + str(int(self.CfL[i][j][k])) + ", Y: " + str(int(self.yfL[i][j][k])) + ",IL: " +  str(IL[i][j][k]) + ", eq3: " + str(eq3[j][k]) + ", eq4: " + str(eq4[j][k]) + ", c: " + str(c))      
         
-        #print(self.IL)            
+        #print("Il")
+        #print(IL.shape)
+        #print(IL) 
+        
+        Illuminance = np.zeros((self.N, 3*self.roadLanes))
+        
+        
+        for i in range(self.N):
+            for j in range(3*self.roadLanes):
+                for k in range(self.Nlum):
+                    Illuminance[i][j] += IL[k][i][j]*pow(np.cos(self.GammaL[k][i][j]*np.pi/180),3)
+
+        #ThIncrementIlluminance = Illuminance * self.Fm / pow(self.luminairesHeight-1.5,2)     
+        Illuminance = Illuminance * self.Fm / pow(self.luminairesHeight,2)
+
+        
+        
+        Emax=np.max(Illuminance);
+        Emax=np.max(Emax)
+        
+        self.IL = IL
+        Emin=np.min(Illuminance);
+        Emin=np.min(Emin)
+        Eav=np.mean(Illuminance);
+        Eav=np.mean(Eav)
+        g1=Emin/Eav
+        g2=Emin/Emax
+        g3=Eav/Emax
+
+        self.Illuminance = Illuminance
+        #self.ThIncrementIlluminance = ThIncrementIlluminance
+        self.Emax = Emax
+        self.Emin = Emin
+        self.Eav = Eav
+        self.g1 = g1
+        self.g2 = g2
+        self.g3 = g3
+        #print("Illuminance")
+        #print(Illuminance)
+        #print("Emax: "+str(Emax))
+        #print("Emin, : "+str(Emin))
+        #print("Eav, : "+str(Eav))
+        #print("g1, : "+str(g1))
+        #print("g2, : "+str(g2))
+        #print("g3, : "+str(g3))
+        
+    def luminanceSecondStep(self):
+        # Observer
+        Ox = np.zeros((self.roadLanes))
+        Oy = np.zeros((self.roadLanes))
+        Oz = np.zeros((self.roadLanes))
+        for i in range(self.roadLanes):
+            Ox[i] = -60
+            Oz[i] = 1.5
+            Oy[i] = self.Py[0][1+(3*i)]
+        #print(Oy)
+
+        #C en grados
+
+        Beta = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))
+        for i in range(self.roadLanes):
+            for j in range(self.Nlum):
+                for k in range(self.N):
+                    for l in range(3*self.roadLanes):
+                        if(j < self.Nlumback+1):
+                            if(self.Py[k][l] == Oy[i]):
+                                Beta[i][j][k][l] = 180 - self.CeL[j][k][l]
+                            elif(self.Py[k][l] < Oy[i]):
+                                Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)- self.CeL[j][k][l]
+                            else:
+                                Beta[i][j][k][l]=180-(45-(np.arctan((self.Py[k][l]-Oy[i])/(self.Px[k][l]-Ox[i]))*180/np.pi))-(self.CeL[j][k][l]-45)
+                        else:
+                            if(self.Py[k][l] == Oy[i]):
+                                Beta[i][j][k][l] = 180 - self.CeL[j][k][l]
+                            elif(self.Py[k][l] < Oy[i]):
+
+                                if (180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l]>=0):
+                                    Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l]
+                                else:
+                                    Beta[i][j][k][l]=np.abs(180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l])
+
+                                #print("TODO")
+                                #Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)- self.CeL[j][k][l]
+
+                                
+                            else:
+                                Beta[i][j][k][l]=180-(180-90-(np.arctan((self.Py[k][l]-Oy[i])/(self.Px[k][l]-Ox[i]))*180/np.pi))-(self.CeL[j][k][l]-90);
+        #print("BETA")
+        #print(Beta)
+        
+        tanG=np.tan(self.GammaL*np.pi/180)
+
+        B = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))
+
+        for i in range(self.roadLanes):
+            for j in range(self.Nlum):
+                for k in range(self.N):
+                    for l in range(3*self.roadLanes):
+                        if(Beta[i][j][k][l]<=2):
+                            B[i][j][k][l]=Beta[i][j][k][l]/2
+
+                        elif (Beta[i][j][k][l]<=45):
+                            B[i][j][k][l]=Beta[i][j][k][l]/5+1
+
+                        elif (Beta[i][j][k][l]<180):
+                            B[i][j][k][l]=Beta[i][j][k][l]/15+7
+
+                        else: 
+                            B[i][j][k][l]=19
+
+
+
+        tG = np.zeros((self.Nlum,self.N, 3*self.roadLanes))
+
+        for i in range(self.Nlum):
+            for j in range(self.N):
+                for k in range(3*self.roadLanes):
+                    if(tanG[i][j][k] <= 2):
+                        tG[i][j][k]=tanG[i][j][k]/0.25
+                    elif(tanG[i][j][k] <= 12):
+                        tG[i][j][k]=tanG[i][j][k]/0.5+4
+                    else:
+                        tG[i][j][k]=28
+        
+        self.B = B 
+        self.Bf=np.floor(self.B)
+        self.Bc=np.ceil(self.B)
+        self.tG=tG
+        self.tGf=np.floor(self.tG)
+        self.tGc=np.ceil(self.tG)
+
+        #print("B:")
+        #print(self.B)
+        #print("Bf:")
+        #print(self.Bf)
+        #print("Bc:")
+        #print(self.Bc)
+        #print("tG:")
+        #print(self.tG)
+        #print("tGf:")
+        #print(self.tGf)
+        #print("tGc:")
+        #print(self.tGc)
+
+    def luminanceThirdStep(self):
+        
+        # load R matrix
+
+        R = np.loadtxt("t.txt")
+        # Beta Interpolation
+        R1 = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))
+        eq3 = np.zeros((self.N, 3*self.roadLanes))
+        eq4 = np.zeros((self.N, 3*self.roadLanes))
+        print("R: ")
+        #print(R)
+        print("Rtype: " +  str(R.shape))
+        for i in range(self.roadLanes):
+            for j in range(self.Nlum):
+                for k in range(self.N):
+                    for l in range(3*self.roadLanes):
+                             
+
+                        eq3[k][l]=R[int(self.tGf[j][k][l])][int(self.Bf[i][j][k][l])]+((self.B[i][j][k][l]-self.Bf[i][j][k][l])/(self.Bc[i][j][k][l]-self.Bf[i][j][k][l]))*(R[int(self.tGf[j][k][l])][int(self.Bc[i][j][k][l])]-R[int(self.tGf[j][k][l])][int(self.Bf[i][j][k][l])])
+                        eq4[k][l]=R[int(self.tGc[j][k][l])][int(self.Bf[i][j][k][l])]+((self.B[i][j][k][l]-self.Bf[i][j][k][l])/(self.Bc[i][j][k][l]-self.Bf[i][j][k][l]))*(R[int(self.tGc[j][k][l])][int(self.Bc[i][j][k][l])]-R[int(self.tGc[j][k][l])][int(self.Bf[i][j][k][l])])
+                        
+                        
+                        
+                        if(not (self.tGc[j][k][l] == self.tGf[j][k][l])):
+                        
+                            R1[i][j][k][l]= eq3[k][l]+((self.tG[j][k][l]-self.tGf[j][k][l])/(self.tGc[j][k][l]-self.tGf[j][k][l]))*(eq4[k][l]-eq3[k][l])                       
+                        else:
+                            R1[i][j][k][l] = 0
+
+                        #print("i: " + str(i) + ", j: " + str(j) + ", k: " + str(k) + ", l: " + str(l) + ", eq3: " +  str(eq3[k][l]) + ", eq4: " +  str(eq4[k][l]) + ", R1: " + str(R1[i][j][k][l]))
+
+                        
+
+        luminance = np.zeros((self.roadLanes,self.N, 3*self.roadLanes))
+        #print(R1)
+        for i in range(self.roadLanes):
+            for j in range(self.Nlum):        
+                for k in range(self.N):
+                    for l in range(3*self.roadLanes):
+                        luminance[i][k][l] += self.IL[j][k][l]*R1[i][j][k][l]
+
+        luminance=luminance*0.0001*self.Fm/pow(self.luminairesHeight,2)
+        print(luminance)
+        Lmax=np.max(luminance);
+        #Lmax=np.max(Lmax)
+        print("Lmax: " + str(Lmax))
+        Lmin=np.min(luminance);
+        #Lmin=np.min(Lmin)
+        print("Lmin: " + str(Lmin))        
+        Lav=np.mean(luminance);
+        #Lav=np.mean(Lav)
+        print("Lav: " + str(Lav))
+
+    def luminanceFourthStep(self):
+        #GammaCL
+        Nlumback = 0
+        Nlumfor=int((12*self.luminairesHeight)/self.luminairesBetweenDistance)+1
+        Nlum=Nlumback+Nlumfor+1
+
+        Ly = [0 for i in range(Nlum)]
+        Lx = [0 for i in range(Nlum)]
+
+        for i in range(Nlum):    
+            Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+            Ly[i] = 0
+        
+
+        print("Lx")
+        print(Lx)
+        #print("self.Py")
+        #print(self.Py)
+
+
+        CeL = np.zeros((Nlum, self.N, 3*self.roadLanes))
+        GammaL = np.zeros((Nlum, self.N, 3*self.roadLanes))
+
+        for i in range(Nlum):
+            for j in range(self.N):
+                for k in range(3*self.roadLanes):      
+
+                    CeL[i][j][k] = math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*(180/math.pi)
+                    GammaL[i][j][k]=math.atan((math.sqrt(math.pow(self.Px[j][k]-Lx[i],2)+math.pow(self.Py[j][k]-Ly[i],2))/self.luminairesHeight))*(180/math.pi)
+                    if(i>Nlumback):
+                        CeL[i][j][k] += 180
+
+
+        CL=CeL/self.StepC
+        CfL=np.floor(CL)
+        CcL=np.ceil(CL)
+        yL=GammaL/self.StepGamma
+        yfL=np.floor(yL)
+        ycL=np.ceil(yL)
+
+
+        # luminance firstStep
+
+        IL = np.zeros((self.Nlum, self.N, 3*self.roadLanes))
+        eq3 = np.zeros((self.N, 3*self.roadLanes))
+        eq4 = np.zeros((self.N, 3*self.roadLanes))
+        #print(IL)
+        #print("luminanceFirstStep")
+        #print("Ln: " + str(3*self.roadLanes))
+        #print("N: " + str(self.N))
+        #print("Nlum: " + str(self.Nlum))
+        #print("IL shape: ")
+        #print(IL.shape)
+
+        #print("eq3 shape: ")
+        #print(eq3.shape)
+        #print(len(eq3[0]))
+
+        #print("IES shape: ")
+        #print(self.IES.shape)
+
+        #print("yfL shape: ")
+        #print(self.yfL.shape)
+        #print(self.yfL)
+
+        
+        for i in range(self.Nlum):
+            for j in range(self.N):
+                for k in range(3*self.roadLanes):
+                    
+                    eq3[j][k]=self.IES[int(CfL[i][j][k])][int(yfL[i][j][k])]+((CL[i][j][k]-CfL[i][j][k])/(CcL[i][j][k]-CfL[i][j][k]))*(self.IES[int(CcL[i][j][k])][int(yfL[i][j][k])]-self.IES[int(CfL[i][j][k])][int(yfL[i][j][k])])
+                    eq4[j][k]=self.IES[int(CfL[i][j][k])][int(ycL[i][j][k])]+((CL[i][j][k]-CfL[i][j][k])/(CcL[i][j][k]-CfL[i][j][k]))*(self.IES[int(CcL[i][j][k])][int(ycL[i][j][k])]-self.IES[int(CfL[i][j][k])][int(ycL[i][j][k])])
+                    IL[i][j][k]=eq3[j][k]+((yL[i][j][k]-yfL[i][j][k])/(ycL[i][j][k]-yfL[i][j][k]))*(eq4[j][k]-eq3[j][k])
+                    # c = self.IES[int(CfL[i][j][k])][int(yfL[i][j][k])]
+                    
+                    #print("i: " + str(i) + ", j: " + str(j)+ ", k: " + str(k) + ", C: " + str(int(self.CfL[i][j][k])) + ", Y: " + str(int(self.yfL[i][j][k])) + ",IL: " +  str(IL[i][j][k]) + ", eq3: " + str(eq3[j][k]) + ", eq4: " + str(eq4[j][k]) + ", c: " + str(c))      
+        
+        #print("Il")
+        #print(IL.shape)
+        #print(IL) 
+        
+        Illuminance = np.zeros((self.N, 3*self.roadLanes))
+        
+        
+        for i in range(self.N):
+            for j in range(3*self.roadLanes):
+                for k in range(self.Nlum):
+                    Illuminance[i][j] += IL[k][i][j]*pow(np.cos(GammaL[k][i][j]*np.pi/180),3)
+
+        self.ThIncrementIlluminance = Illuminance * self.Fm / pow(self.luminairesHeight-1.5,2)     
+        print("TH Iluminance: ")
+        print(self.ThIncrementIlluminance)
+        # Illuminance = Illuminance * self.Fm / pow(self.luminairesHeight,2)
+
 
 
 def main():
