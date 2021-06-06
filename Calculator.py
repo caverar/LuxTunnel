@@ -914,8 +914,8 @@ class calculator():
         Nlumback = 0
         Nlumfor=int((12*(self.luminairesHeight-1.5))/self.luminairesBetweenDistance)+1
         Nlum=Nlumback+Nlumfor+1
-        #print("Nlum:"+str(Nlum))
-        #print("Nlumfor:"+str(Nlumfor))
+        print("Nlum:"+str(Nlum))
+        print("Nlumfor:"+str(Nlumfor))
         Ly = [0 for i in range(Nlum)]
         Lx = [0 for i in range(Nlum)]
 
@@ -924,7 +924,7 @@ class calculator():
             Ly[i] = 0
         
 
-        #print("Lx" + str(Lx))
+        print("Lx" + str(Lx))
         #print("self.Py")
         #print(self.Py)
 
@@ -952,14 +952,14 @@ class calculator():
 
         # luminance firstStep
 
-        IL = np.zeros((self.Nlum, self.N, 3*self.roadLanes))
+        IL = np.zeros((Nlum, self.N, 3*self.roadLanes))
         eq3 = np.zeros((self.N, 3*self.roadLanes))
         eq4 = np.zeros((self.N, 3*self.roadLanes))
         #print(IL)
         #print("luminanceFirstStep")
         #print("Ln: " + str(3*self.roadLanes))
         #print("N: " + str(self.N))
-        #print("Nlum: " + str(self.Nlum))
+        #print("Nlum: " + str(Nlum))
         #print("IL shape: ")
         #print(IL.shape)
 
@@ -974,8 +974,11 @@ class calculator():
         #print(self.yfL.shape)
         #print(self.yfL)
 
+        print("Nlum: " + str(Nlum))
+        print("N: " + str(self.N))
+        print("3XroadLanes: " + str(3*self.roadLanes))
         
-        for i in range(self.Nlum):
+        for i in range(Nlum):
             for j in range(self.N):
                 for k in range(3*self.roadLanes):
                     
@@ -991,8 +994,8 @@ class calculator():
         #print(IL) 
         
         Illuminance = np.zeros((self.N, 3*self.roadLanes))
-        Ek = np.zeros((self.Nlum))
-        for k in range(self.Nlum):
+        Ek = np.zeros((Nlum))
+        for k in range(Nlum):
             for i in range(self.N):
                 for j in range(3*self.roadLanes):
                 
@@ -1019,7 +1022,7 @@ def main():
     #test.percentArray = [0.10,0.10,0.10,0.10,0.10,0.20,0.30]
     #test.doL20()
     #test.printSecondData()
-    test.secondPhaseReset(IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 10, roadWidth = 15, roadLanes=3, luminairesRotation = -5, Fm= 0.5)
+    test.secondPhaseReset(IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 10, roadWidth = 15, roadLanes=2, luminairesRotation = -5, Fm= 0.5)
 
     #test.printSencondPhaseData()
 
