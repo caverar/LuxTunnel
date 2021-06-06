@@ -131,7 +131,7 @@ class calculator():
         print("Lth: " + str(self.Lth))
 
 #---SECOND-PHASE-LUMINANCE---------------------------------------------------------------------------------------------------------------------------------------
-    def secondPhaseReset(self,luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 90, Fm= 0.5):
+    def secondPhaseReset(self, IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 90, Fm= 0.5):
         
         self.Fm = Fm
         self.luminairesHeight = luminairesHeight                            
@@ -141,9 +141,9 @@ class calculator():
         self.luminairesRotation = luminairesRotation                    # Degrees
         self.getMeshPoints()
         self.getGammaCCoordinates()
-
+        self.loadIES(loadFile = True, route = IESroute, rotationAngle = luminairesRotation)
         try:
-            self.loadIES(loadFile = True, route = "Sit4.ies")
+            
             self.getstepGammaCeL()
             self.luminanceFirstStep()
             self.luminanceSecondStep()
@@ -190,6 +190,8 @@ class calculator():
         Nlumfor=int((12*self.luminairesHeight)/self.luminairesBetweenDistance)+1
         Nlum=Nlumback+Nlumfor+1
 
+        #print("Nlum:" + str(Nlum))
+        #print("Nlumfor:" + str(Nlumfor))
         Ly = [0 for i in range(Nlum)]
         Lx = [0 for i in range(Nlum)]
 
@@ -397,17 +399,14 @@ class calculator():
                     # C
                     #print("auxIES") 
                     #print(auxIES)
-                    if(rawCFSO == 0):                                                           # CSize = 0, replication                        
-                        
+                    if(rawCFSO == 0):                                                           # CSize = 0, replication
                         for j in range(auxIESCSize):
                             for k in range(auxIESGammaSize):
                                 auxIES[j][k] = auxIES[0][k]
 
                     elif(rawCFSO == 90):                                                        # Csize = 90
                         #print("auxIES_RLD:")
-
                         # look for j index
-
                         j90 = 0
                         j180 = 0
                         j360 = 0
@@ -422,7 +421,6 @@ class calculator():
 
                         for j in range(auxIESCSize):
                             for k in range(auxIESGammaSize):
-
 
                                 if(auxCIndex[j]<=90):
                                     auxIES[j][k] = auxIES[j][k]
@@ -441,22 +439,19 @@ class calculator():
                     elif(rawCFSO == 180):                                                        # Csize = 90
                     
                          # look for j index
-
                         j360 = 0
                         for j in range(auxIESCSize):
                             if(auxCIndex[j] == 360):
                                 j360 = j
-                        # apply symmetry
 
+                        # apply symmetry
                         for j in range(auxIESCSize):
                             for k in range(auxIESGammaSize):
-
 
                                 if(auxCIndex[j]<=180):
                                     auxIES[j][k] = auxIES[j][k]
                                 else:
-                                    auxIES[j][k] = auxIES[j360-j][k]
-                           
+                                    auxIES[j][k] = auxIES[j360-j][k]                           
                         
                             #print("indexC: " + str(auxCIndex[j]))
                             #print("jindex: " + str(jindex))
@@ -470,8 +465,8 @@ class calculator():
 
                 # interpolation equation apply
 
-                print("preRotationIESCSize: " + str(preRotationIESCSize))
-                print("preRotationIESGammaSize: " + str(preRotationIESGammaSize))
+                #print("preRotationIESCSize: " + str(preRotationIESCSize))
+                #print("preRotationIESGammaSize: " + str(preRotationIESGammaSize))
                 for j in range(preRotationIESCSize):
                     wantedC = j * self.StepC
                     for k in range(preRotationIESGammaSize):
@@ -577,25 +572,51 @@ class calculator():
                             m = (IGiCF - IGiCO)/(CF-CO)
                             preRotationIES[j][k] =  (m * (wantedC-CO)) + IGiCO
 
-                                                                      
+                # User Rotation:
+                 
+                #print("rotationAngle: " + str(rotationAngle))
+                                                                  
                 if(rotationAngle == 0):
                     IES=preRotationIES
-                else: 
-                    print("TODO")            
+                else:
+                    
+                    preRotationIESCIndex = np.zeros((preRotationIESCSize))
+                    for i in range(preRotationIESCSize):
+                        preRotationIESCIndex[i] = i*self.StepC
+                    IES =  np.zeros((preRotationIESCSize, preRotationIESGammaSize))
+                    
+                    for i in range(preRotationIESCSize-1):
+                        wantedC = (i * self.StepC) + rotationAngle
+                        if wantedC < 0: wantedC += 360
+                        if wantedC >= 360: wantedC -= wantedC
+                        #print("wantedC: " + str(wantedC))
+                        if ((wantedC/self.StepC) in preRotationIESCIndex):
+                            for j in range(preRotationIESGammaSize):
+                                IES[i][j] = preRotationIES[(int(wantedC/self.StepC))][j]
+                        else:
+                            #print("OUT OF RANGE")
+                            for j in range(preRotationIESCSize):
+                                if(preRotationIESCIndex[j]>wantedC):
+                                    nearOverCIndex = j
+                                    break
+                            
+                            for j in range(preRotationIESGammaSize):
+                                IES[i][j] = preRotationIES[nearOverCIndex-1][j] + ( ( (preRotationIES[nearOverCIndex][j]-preRotationIES[nearOverCIndex-1][j]) / (self.StepC) ) * (wantedC-((nearOverCIndex-1)*self.StepC)) )  
 
-                #print("width: " + str(width))
-                #print("length: " + str(length))
-                #print("height: " + str(height))    
-                #print("multiplier: " + str(luxMultiplier))
-                #print("rawGammaIndex: " + rawGammaIndex)
-                #print("rawCIndex: " + rawCIndex)
-                print("preRotationIES: ")
-                print(preRotationIES)
 
-                self.IES = IES 
+                    IES[preRotationIESCSize-1] = preRotationIES[0]
+                                                
+                self.IES = IES
 
-                print("IES: ")
-                print(IES)
+                #print("preRotationIES: ")
+                #for i in range(preRotationIESCSize):
+                #    print(str(preRotationIES[i]))
+                #print("IES: ")
+                #for i in range(preRotationIESCSize):
+                #    print(str(IES[i]))
+                
+                
+
 
             except FileNotFoundError:
                 mb.showerror("ERROR","Ruta no encontrada.")
@@ -618,8 +639,8 @@ class calculator():
             self.Indexgamma=180/5+1
 
             # print((self.IES))
-            # Rotation:
-            print("TODO Rotation")
+
+
 
 
 
@@ -831,25 +852,28 @@ class calculator():
         R1 = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))
         eq3 = np.zeros((self.N, 3*self.roadLanes))
         eq4 = np.zeros((self.N, 3*self.roadLanes))
-        print("R: ")
+        #print("R: ")
         #print(R)
-        print("Rtype: " +  str(R.shape))
+        #print("Rtype: " +  str(R.shape))
         for i in range(self.roadLanes):
             for j in range(self.Nlum):
                 for k in range(self.N):
                     for l in range(3*self.roadLanes):
-                             
 
-                        eq3[k][l]=R[int(self.tGf[j][k][l])][int(self.Bf[i][j][k][l])]+((self.B[i][j][k][l]-self.Bf[i][j][k][l])/(self.Bc[i][j][k][l]-self.Bf[i][j][k][l]))*(R[int(self.tGf[j][k][l])][int(self.Bc[i][j][k][l])]-R[int(self.tGf[j][k][l])][int(self.Bf[i][j][k][l])])
-                        eq4[k][l]=R[int(self.tGc[j][k][l])][int(self.Bf[i][j][k][l])]+((self.B[i][j][k][l]-self.Bf[i][j][k][l])/(self.Bc[i][j][k][l]-self.Bf[i][j][k][l]))*(R[int(self.tGc[j][k][l])][int(self.Bc[i][j][k][l])]-R[int(self.tGc[j][k][l])][int(self.Bf[i][j][k][l])])
-                        
-                        
-                        
-                        if(not (self.tGc[j][k][l] == self.tGf[j][k][l])):
-                        
-                            R1[i][j][k][l]= eq3[k][l]+((self.tG[j][k][l]-self.tGf[j][k][l])/(self.tGc[j][k][l]-self.tGf[j][k][l]))*(eq4[k][l]-eq3[k][l])                       
+
+                        if(self.Bc[i][j][k][l] == self.Bf[i][j][k][l]):
+
+                            R1[i][j][k][l] = R[int(self.tG[j][k][l])][int(self.B[i][j][k][l])]
+
                         else:
-                            R1[i][j][k][l] = 0
+                            eq3[k][l]=R[int(self.tGf[j][k][l])][int(self.Bf[i][j][k][l])]+((self.B[i][j][k][l]-self.Bf[i][j][k][l])/(self.Bc[i][j][k][l]-self.Bf[i][j][k][l]))*(R[int(self.tGf[j][k][l])][int(self.Bc[i][j][k][l])]-R[int(self.tGf[j][k][l])][int(self.Bf[i][j][k][l])])
+                            eq4[k][l]=R[int(self.tGc[j][k][l])][int(self.Bf[i][j][k][l])]+((self.B[i][j][k][l]-self.Bf[i][j][k][l])/(self.Bc[i][j][k][l]-self.Bf[i][j][k][l]))*(R[int(self.tGc[j][k][l])][int(self.Bc[i][j][k][l])]-R[int(self.tGc[j][k][l])][int(self.Bf[i][j][k][l])])
+                        
+                            if(not (self.tGc[j][k][l] == self.tGf[j][k][l])):
+                            
+                                R1[i][j][k][l]= eq3[k][l]+((self.tG[j][k][l]-self.tGf[j][k][l])/(self.tGc[j][k][l]-self.tGf[j][k][l]))*(eq4[k][l]-eq3[k][l])                       
+                            else:
+                                R1[i][j][k][l] = 0
 
                         #print("i: " + str(i) + ", j: " + str(j) + ", k: " + str(k) + ", l: " + str(l) + ", eq3: " +  str(eq3[k][l]) + ", eq4: " +  str(eq4[k][l]) + ", R1: " + str(R1[i][j][k][l]))
 
@@ -864,23 +888,34 @@ class calculator():
                         luminance[i][k][l] += self.IL[j][k][l]*R1[i][j][k][l]
 
         luminance=luminance*0.0001*self.Fm/pow(self.luminairesHeight,2)
-        print(luminance)
-        Lmax=np.max(luminance);
-        #Lmax=np.max(Lmax)
-        print("Lmax: " + str(Lmax))
-        Lmin=np.min(luminance);
-        #Lmin=np.min(Lmin)
-        print("Lmin: " + str(Lmin))        
-        Lav=np.mean(luminance);
-        #Lav=np.mean(Lav)
-        print("Lav: " + str(Lav))
+
+        Lmax = np.zeros((self.roadLanes))
+        Lmin = np.zeros((self.roadLanes))
+        Lav = np.zeros((self.roadLanes))
+
+        for i in range(self.roadLanes):
+
+            Lmax[i]=np.max(luminance[i])
+            Lmin[i]=np.min(luminance[i])
+            Lav[i]=np.mean(luminance[i])
+
+        self.Lmax = Lmax
+        self.Lmin = Lmin
+        self.Lav = Lav
+        self.luminance = luminance
+        
+        #print("luminance:" + str(luminance))
+        #print("Lmax: " + str(Lmax))
+        #print("Lmin: " + str(Lmin))
+        #print("Lav: " + str(Lav))
 
     def luminanceFourthStep(self):
         #GammaCL
         Nlumback = 0
-        Nlumfor=int((12*self.luminairesHeight)/self.luminairesBetweenDistance)+1
+        Nlumfor=int((12*(self.luminairesHeight-1.5))/self.luminairesBetweenDistance)+1
         Nlum=Nlumback+Nlumfor+1
-
+        #print("Nlum:"+str(Nlum))
+        #print("Nlumfor:"+str(Nlumfor))
         Ly = [0 for i in range(Nlum)]
         Lx = [0 for i in range(Nlum)]
 
@@ -889,8 +924,7 @@ class calculator():
             Ly[i] = 0
         
 
-        print("Lx")
-        print(Lx)
+        #print("Lx" + str(Lx))
         #print("self.Py")
         #print(self.Py)
 
@@ -903,7 +937,7 @@ class calculator():
                 for k in range(3*self.roadLanes):      
 
                     CeL[i][j][k] = math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*(180/math.pi)
-                    GammaL[i][j][k]=math.atan((math.sqrt(math.pow(self.Px[j][k]-Lx[i],2)+math.pow(self.Py[j][k]-Ly[i],2))/self.luminairesHeight))*(180/math.pi)
+                    GammaL[i][j][k]=math.atan((math.sqrt(math.pow(self.Px[j][k]-Lx[i],2)+math.pow(self.Py[j][k]-Ly[i],2))/(self.luminairesHeight-1.5)))*(180/math.pi)
                     if(i>Nlumback):
                         CeL[i][j][k] += 180
 
@@ -957,16 +991,22 @@ class calculator():
         #print(IL) 
         
         Illuminance = np.zeros((self.N, 3*self.roadLanes))
-        
-        
-        for i in range(self.N):
-            for j in range(3*self.roadLanes):
-                for k in range(self.Nlum):
+        Ek = np.zeros((self.Nlum))
+        for k in range(self.Nlum):
+            for i in range(self.N):
+                for j in range(3*self.roadLanes):
+                
                     Illuminance[i][j] += IL[k][i][j]*pow(np.cos(GammaL[k][i][j]*np.pi/180),3)
+            
+            ThIncrementIlluminance = Illuminance * self.Fm / pow(self.luminairesHeight-1.5,2)     
+            Ek[k] = np.average(ThIncrementIlluminance[i][j])
 
-        self.ThIncrementIlluminance = Illuminance * self.Fm / pow(self.luminairesHeight-1.5,2)     
-        print("TH Iluminance: ")
-        print(self.ThIncrementIlluminance)
+
+        print("Ek: ")
+        print(Ek)
+
+
+
         # Illuminance = Illuminance * self.Fm / pow(self.luminairesHeight,2)
 
 
@@ -979,8 +1019,8 @@ def main():
     #test.percentArray = [0.10,0.10,0.10,0.10,0.10,0.20,0.30]
     #test.doL20()
     #test.printSecondData()
+    test.secondPhaseReset(IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 10, roadWidth = 15, roadLanes=3, luminairesRotation = -5, Fm= 0.5)
 
-    test.secondPhaseReset()
     #test.printSencondPhaseData()
 
 
