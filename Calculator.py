@@ -829,6 +829,9 @@ class calculator():
         self.tG=tG
         self.tGf=np.floor(self.tG)
         self.tGc=np.ceil(self.tG)
+        self.Ox = Ox
+        self.Oy = Oy
+        self.Oz = Oz
 
         #print("B:")
         #print(self.B)
@@ -1005,12 +1008,57 @@ class calculator():
             Ek[k] = np.average(ThIncrementIlluminance[i][j])
 
 
+
+        # thetaK:
+        driverAge = 23
+        thetaK = np.zeros((self.roadLanes, self.Nlum))
+        for i in range(self.roadLanes):
+            for j in range(Nlum):
+                thetaK[i][j] = (180/np.pi)*np.arccos(((Lx[j]-self.Ox[i])*np.cos(-1*np.pi/180)+ ((self.luminairesHeight-1.5)-self.Oz[i])*np.sin(-1*np.pi/180))/( math.sqrt(pow(Lx[j]-self.Ox[i],2)+pow(Ly[j]-self.Oy[i],2)+pow((self.luminairesHeight-1.5)-self.Oz[i],2)) ))
+       
+
+        LV = np.zeros((self.roadLanes))
+
+        for i in range(self.roadLanes):
+            for j in range(Nlum):
+
+                if thetaK[i][j]<60 and 1.5<=thetaK[i][j]:
+                    LV[i] += 9.86 * pow(1+(driverAge/66.4),4) * Ek[j]/pow(thetaK[i][j],2)
+
+                elif thetaK[i][j]<1.5 and 0.1<=thetaK[i][j]:
+                    LV[i] += 5 * pow(1+(driverAge/62.5),4) * Ek[j]/pow(thetaK[i][j],2)+10*Ek[j]/pow(thetaK[i][j],3)
+
+        
+        fTI = np.zeros((self.roadLanes))
+        self.Lav
+        for i in range(self.roadLanes):
+            if self.Lav[i]<=5:
+                fTI[i] = 65*LV[i]/(0.8*self.Lav[i])
+
+            elif self.Lav[i] >5:
+                fTI[i] = 95*LV[i]/(1.05*self.Lav[i])
+            
+        
+        
         print("Ek: ")
         print(Ek)
+        
+        print("thetaK: ")
+        print(thetaK)
+
+        print("LV: ")
+        print(LV)
+
+        print("fTI: ")
+        print(fTI)
 
 
 
-        # Illuminance = Illuminance * self.Fm / pow(self.luminairesHeight,2)
+
+
+
+
+        
 
 
 
