@@ -138,10 +138,10 @@ class calculator():
         self.luminairesBetweenDistance = luminairesBetweenDistance          
         self.roadWidth = roadWidth
         self.roadLanes = roadLanes                                          
-        self.luminairesRotation = luminairesRotation                    # Degrees
+        self.luminairesRotation = -luminairesRotation                    # Degrees
         self.getMeshPoints()
         self.getGammaCCoordinates()
-        self.loadIES(loadFile = True, route = IESroute, rotationAngle = luminairesRotation)
+        self.loadIES(loadFile = True, route = IESroute, rotationAngle = -luminairesRotation)
         try:
             
             self.getstepGammaCeL()
@@ -1055,13 +1055,6 @@ class calculator():
 
 
 
-
-
-
-        
-
-
-
 def main():
 
     test = calculator()
@@ -1070,9 +1063,21 @@ def main():
     #test.percentArray = [0.10,0.10,0.10,0.10,0.10,0.20,0.30]
     #test.doL20()
     #test.printSecondData()
-    test.secondPhaseReset(IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 10, roadWidth = 15, roadLanes=2, luminairesRotation = -5, Fm= 0.5)
+    test.secondPhaseReset(IESroute="Sit3.ies", luminairesHeight = 8, luminairesBetweenDistance = 9, roadWidth = 13, roadLanes=3, luminairesRotation = 90, Fm= 0.5)
 
     #test.printSencondPhaseData()
+
+    print("------------------------------------")
+    print("luminance:" + str(test.luminance))
+    print("Lmax: " + str(test.Lmax))
+    print("Lmin: " + str(test.Lmin))
+    print("Lav: " + str(test.Lav))
+
+    print("------------------------------------")
+    print("iluminance:" + str(test.Illuminance))
+    print("Emax: " + str(test.Emax))
+    print("Emin: " + str(test.Emin))
+    print("Eav: " + str(test.Eav))
 
 
 
