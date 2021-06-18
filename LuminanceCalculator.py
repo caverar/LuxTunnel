@@ -1,164 +1,45 @@
 from tkinter import messagebox as mb
 import math
 import numpy as np
-class calculator():
 
-#---FIRST-PHASE-L20---------------------------------------------------------------------------------------------------------------------------------------------
-    
-    def __init__(self,maxSpeed = 60, slope = 0.1, fiftyPercentThreshold= False, MountainousTerrain = False, cardinalDirection = 0, Hemisphere = 0):
-        self.maxSpeed = maxSpeed                                        # Max speed at tunnel entrance, Km/h
-        self.fiftyPercentThreshold = fiftyPercentThreshold              # If the illuminance must be over 50% Lth 
-        self.slope = slope                                              # slope percent, ratio between Verticaldistance/Horizontaldistance, (-1,1) = (-45º, 45º)
-        self.MountainousTerrain = MountainousTerrain                                        
-        self.cardinalDirection = cardinalDirection                      # 0: North, 1: West, 2: South, 3: East
-        self.Hemisphere = Hemisphere                                    # 0: North, 1: South
-        self.Lc = 0                                                     # Sky Luminance
-        self.Le = 0                                                     # EnvironmentLuminance
-        self.LeRocks = 0
-        self.LeBuildings = 0
-        self.LeSnow = 0
-        self.LeMeadows = 0
-        self.Lr = 0                                                     # Road Luminance
-        self.setIlluminances()
-        self.k = 0                                                      # k factor Lth/L20
-        self.setKFactor()
-        self.f = 0                                                      # wet friction
-        self.setFriction()
-        self.SD = 0.0                                                   # Stop Distance
-        self.setstopDistance()
-        if(self.SD <=0):
-            mb.showerror("ERROR","La pendiente de la carretera es muy pronunciada y no es posible frenar en las condiciones seleccionadas de velocidad máxima y fricción de pavimento. ")
-            self.SD = 0
-        self.percentArray = [0 for i in range(6)]                       # Area materials percent array
-        
-        self.Lth = 0
-        self.L20 = 0
-        # self.slope < -(self.f)
-        # f must be set before slope, to do the comparison
+class LuminanceCalculator():
 
-    def setKFactor(self):
-
-        if self.maxSpeed <= 60:
-            self.k = 0.05
-        else:
-            self.k =((1/120000)*pow(self.maxSpeed,2))-((1/1500)*(self.maxSpeed))+(3/50)
-
-    def setFriction(self):
-        self.f= -((1/7980000)*pow(self.maxSpeed,3))+((137/2660000)*pow(self.maxSpeed,2))-((5837/798000)*self.maxSpeed)+(62/95)
-
-    def setstopDistance(self):
-        self.SD = ((self.maxSpeed*10)/36)+ (pow((self.maxSpeed*10)/36,2)/(2*(9.80665)*(self.f+self.slope)))
-
-    def setIlluminances(self):
-
-        if (self.cardinalDirection == 0 and self.Hemisphere == 0 ) or (self.cardinalDirection == 2 and self.Hemisphere == 1):
-            self.Lc = 8
-            self.Lr = 3
-            self.LeRocks = 3
-            self.LeBuildings = 8
-            self.LeSnow = 15
-            self.LeMeadows = 2
-        elif (self.cardinalDirection == 2 and self.Hemisphere == 0) or (self.cardinalDirection == 0 and self.Hemisphere == 1) :
-            self.Lc = 12
-            self.Lr = 4
-            self.LeRocks = 2
-            self.LeBuildings = 6
-            if self.MountainousTerrain:
-                self.LeSnow = 10
-            else:
-                self.LeSnow = 15
-            self.LeMeadows = 2
-        else:
-            self.Lc = 16
-            self.Lr = 5
-            self.LeRocks = 1
-            self.LeBuildings = 4
-            if self.MountainousTerrain:
-                self.LeSnow = 5
-            else:
-                self.LeSnow = 15
-            self.LeMeadows = 2
-    
-
-    def doL20(self):
-        self.Lth = ((self.percentArray[0]*self.Lc)+(self.percentArray[1]*self.Lr)+(self.percentArray[2]*self.LeRocks)
-                   +(self.percentArray[3]*self.LeBuildings)+(self.percentArray[4]*self.LeSnow)+(self.percentArray[5]*self.LeMeadows))/((1/self.k)+self.percentArray[6])
-
-        self.L20 = self.Lth/self.k
-    
-    def setManualIlluminances(self, Lc = 0, LeRocks = 0, LeBuildings = 0, LeSnow =0, LeMeadows = 0, Lr = 0 ):
-        self.LeRocks = LeRocks
-        self.LeBuildings = LeBuildings
-        self.LeSnow = LeSnow
-        self.LeMeadows = LeMeadows
-        self.Lc = Lc
-        self.Lr = Lr
-
-
-    def updatefirstData(self,maxSpeed = 60, slope = 0.1, fiftyPercentThreshold= False, MountainousTerrain = False, cardinalDirection = 0, Hemisphere = 0):
-        self.maxSpeed = maxSpeed
-        self.fiftyPercentThreshold = fiftyPercentThreshold
-        self.slope = slope
-        self.MountainousTerrain = MountainousTerrain 
-        self.cardinalDirection = cardinalDirection
-        self.Hemisphere = Hemisphere
-
-        self.setKFactor()
-        self.setFriction()
-        self.setstopDistance()
+    def __init__(self, IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 0, Fm= 0.5):
         
 
-        if(self.SD <=0):
-            mb.showerror("ERROR","La pendiente de la carretera es muy pronunciada y no es posible frenar en las condiciones seleccionadas de velocidad máxima y fricción de pavimento. ")
-            self.SD = 0
-        self.setIlluminances()
 
-    def updateSecondData(self, Lc = 0, LeRocks = 0, LeBuildings = 0, LeSnow =0, LeMeadows = 0, Lr = 0):
-        self.setManualIlluminances(Lc = Lc, LeRocks = LeRocks, LeBuildings = LeBuildings, LeSnow =LeSnow, LeMeadows = LeMeadows, Lr = Lr)
-
-    def printFirstData(self):
-        print("Velocidad maxima: " + str(self.maxSpeed)+ "km/h")
-        print("Coeficiente de friccion: " + str(self.f))
-        print("Distancia de parada: "+str(self.SD)+"m")
-        print("Medio Lth?: "+str(self.fiftyPercentThreshold))
-        ori = ["North", "West", "South", "East"]
-        print("Orientacion: " + str(ori[self.cardinalDirection]))
-        print("Hemisferio: " + str(ori[self.Hemisphere+1]))
-    
-    def printSecondData(self):
-        print("Iluminancias: Lc: " + str(self.Lc) + ", LeRocks: " + str(self.LeRocks) + ", LeBuildings: " + str(self.LeBuildings) + ", LeSnow: " + str(self.LeSnow) + ", LeMeadows: " + str(self.LeMeadows) + ", Lr: " + str(self.Lr))
-        print("L20: " + str(self.L20))
-        print("Lth: " + str(self.Lth))
-
-#---SECOND-PHASE-LUMINANCE---------------------------------------------------------------------------------------------------------------------------------------
-    def secondPhaseReset(self, IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 90, Fm= 0.5):
-        
-        self.Fm = Fm
+        self.luminariesOverhang = luminariesOverhang        
+        self.luminariesDistribution = luminariesDistribution                                    # 0:Single-side-Left, 1:Single-side-Right, 2:Double-side, 3:Double-side-staggered 
+        self.Fm = Fm                                                                            # default value 10
         self.luminairesHeight = luminairesHeight                            
-        self.luminairesBetweenDistance = luminairesBetweenDistance          
-        self.roadWidth = roadWidth
-        self.roadLanes = roadLanes                                          
-        self.luminairesRotation = -luminairesRotation                    # Degrees
+        self.luminairesBetweenDistance = luminairesBetweenDistance                              
+        self.roadWidth = roadWidth                                                              # 30 max
+        self.roadLanes = roadLanes                                                              # 3 max                    
+        self.luminairesRotation = -luminairesRotation                                           # Degrees
+        
+        
         self.getMeshPoints()
         self.getGammaCCoordinates()
         self.loadIES(loadFile = True, route = IESroute, rotationAngle = -luminairesRotation)
+        
+
         try:
             
             self.getstepGammaCeL()
             self.luminanceFirstStep()
             self.luminanceSecondStep()
+            self.luminanceThirdStep()
+            self.luminanceFourthStep()
         except:
             mb.showerror("ERROR","No se pudo completar apropiadamente el proceso de calculo.")
-            pass    
+               
         
-        self.luminanceThirdStep()
-        self.luminanceFourthStep()
 
-    def printSencondPhaseData(self):
-        print("Px: ")
-        print(self.Px)
-        print("Py: ")
-        print(self.Py)
+
+    
+
+    
+    
     def getMeshPoints(self):
         
         if self.luminairesBetweenDistance <= 30:
@@ -185,25 +66,60 @@ class calculator():
         self.Py = Py
         self.N = N
 
+
     def getGammaCCoordinates(self):
+
+        if not (0 <=self.luminariesDistribution <=3):
+            mb.showerror("ERROR","Ditribución de luminarias indefinida.")
+            raise Exception   
+
+
         Nlumback=int((5*self.luminairesHeight)/self.luminairesBetweenDistance)
         Nlumfor=int((12*self.luminairesHeight)/self.luminairesBetweenDistance)+1
         Nlum=Nlumback+Nlumfor+1
 
         #print("Nlum:" + str(Nlum))
         #print("Nlumfor:" + str(Nlumfor))
+    
         Ly = [0 for i in range(Nlum)]
-        Lx = [0 for i in range(Nlum)]
+        Lx = [0 for i in range(Nlum)]         
+           
+
+        if(self.luminariesDistribution == 0):                                                   # 0:Single-side-Left 
+            for i in range(Nlum):    
+                Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+                Ly[i] = self.luminariesOverhang
+        elif(self.luminariesDistribution == 1):                                                 # 1:Single-side-Right
+            for i in range(Nlum):    
+                Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+                Ly[i] = self.roadWidth - self.luminariesOverhang
+
+        elif(self.luminariesDistribution == 2):                                                 # 2:Double-side
+            Ly = [0 for i in range(2*Nlum)]
+            Lx = [0 for i in range(2*Nlum)]
+            for i in range(Nlum): 
+                Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+                Ly[i] = self.luminariesOverhang
+                Lx[i+Nlumback] = -(Nlumback-i)*self.luminairesBetweenDistance                
+                Ly[i+Nlumback] = self.roadWidth - self.luminariesOverhang  
+            Nlum=2*Nlum
+        elif(self.luminariesDistribution == 3):                                                 # 3:Double-side-staggered
+            Ly = [0 for i in range(2*Nlum)]
+            Lx = [0 for i in range(2*Nlum)]
+            for i in range(Nlum):  
+                Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+                Ly[i] = self.luminariesOverhang
+                Lx[i+Nlumback] = (self.luminairesBetweenDistance/2)-(Nlumback-i)*self.luminairesBetweenDistance                
+                Ly[i+Nlumback] = self.roadWidth - self.luminariesOverhang   
+            Nlum=2*Nlum
 
         for i in range(Nlum):    
             Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
             Ly[i] = 0
         
+        #print("self.Lx: + str(self.Lx))
+        #print("self.Ly: + str(self.Ly))
 
-        #print("self.Px")
-        #print(self.Px)
-        #print("self.Py")
-        #print(self.Py)
 
 
         CeL = np.zeros((Nlum, self.N, 3*self.roadLanes))
@@ -227,7 +143,6 @@ class calculator():
         #print(CeL)
         #print("GammaL")
         #print(GammaL)
-
 
 
     def loadIES(self, loadFile = True, route = "Sit4.ies", StepGamma = 5, StepC=10, rotationAngle=0):
@@ -641,9 +556,6 @@ class calculator():
             # print((self.IES))
 
 
-
-
-
     def getstepGammaCeL(self):
         # floor and ceil
         CL=self.CeL/self.StepC
@@ -1052,32 +964,33 @@ class calculator():
         print("fTI: ")
         print(fTI)
 
+    # Extras
+    def printData(self):
+        print("Px: ")
+        print(self.Px)
+        print("Py: ")
+        print(self.Py)
 
+        print("------------------------------------")
+        print("luminance:" + str(self.luminance))
+        print("Lmax: " + str(self.Lmax))
+        print("Lmin: " + str(self.Lmin))
+        print("Lav: " + str(self.Lav))
+    
+        print("------------------------------------")
+        print("Illuminance:" + str(self.Illuminance))
+        print("Emax: " + str(self.Emax))
+        print("Emin: " + str(self.Emin))
+        print("Eav: " + str(self.Eav))
 
 
 def main():
 
-    test = calculator()
-    test.updatefirstData(maxSpeed = 60, slope = 0.5, fiftyPercentThreshold= False,  cardinalDirection = 0, Hemisphere = 0 )
-    #test.printFirstData()
-    #test.percentArray = [0.10,0.10,0.10,0.10,0.10,0.20,0.30]
-    #test.doL20()
-    #test.printSecondData()
-    test.secondPhaseReset(IESroute="Sit3.ies", luminairesHeight = 8, luminairesBetweenDistance = 9, roadWidth = 13, roadLanes=3, luminairesRotation = 90, Fm= 0.5)
+    test = LuminanceCalculator(IESroute="Sit1.ies", luminairesHeight = 4, luminairesBetweenDistance = 20, roadWidth = 10, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 0, Fm= 0.5)
 
-    #test.printSencondPhaseData()
+    test.printData()
 
-    print("------------------------------------")
-    print("luminance:" + str(test.luminance))
-    print("Lmax: " + str(test.Lmax))
-    print("Lmin: " + str(test.Lmin))
-    print("Lav: " + str(test.Lav))
 
-    print("------------------------------------")
-    print("iluminance:" + str(test.Illuminance))
-    print("Emax: " + str(test.Emax))
-    print("Emin: " + str(test.Emin))
-    print("Eav: " + str(test.Eav))
 
 
 
