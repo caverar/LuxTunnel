@@ -334,20 +334,20 @@ end
 no=1;
 for no=no:Lanes
     ni=1;
-for ni=ni:Nlum
-    i=1;
-for i=i:Nc
-    j=1;
-for j=j:N
-    u=[Lx(ni)-Px(i,j),-Ly(ni)+Py(i,j)];
-    u=u/norm(u);
-    v=[-(Ox(no)-Px(i,j)),Oy(no)-Py(i,j)];
-    v=v/norm(v);
-    Beta(i,j,ni,no)=(180/pi)*acos(dot(v,u)/(norm(u)*norm(v)));
-    
-end
-end 
-end
+    for ni=ni:Nlum
+        i=1;
+        for i=i:Nc
+            j=1;
+            for j=j:N
+                u=[Lx(ni)-Px(i,j),-Ly(ni)+Py(i,j)];
+                u=u/norm(u);
+                v=[-(Ox(no)-Px(i,j)),Oy(no)-Py(i,j)];
+                v=v/norm(v);
+                Beta(i,j,ni,no)=(180/pi)*acos(dot(v,u)/(norm(u)*norm(v)));
+
+            end
+        end 
+    end
 end
 
 tanG=tan(GammaL*pi/180);

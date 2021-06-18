@@ -18,20 +18,24 @@ class LuminanceCalculator():
         self.luminairesRotation = -luminairesRotation                                           # Degrees
         
         
-        self.getMeshPoints()
-        self.getGammaCCoordinates()
-        self.loadIES(loadFile = True, route = IESroute, rotationAngle = -luminairesRotation)
+
         
 
         try:
-            
+            self.getMeshPoints()
+            self.getGammaCCoordinates()
+            self.loadIES(loadFile = True, route = IESroute, rotationAngle = -luminairesRotation)            
             self.getstepGammaCeL()
-            self.luminanceFirstStep()
-            self.luminanceSecondStep()
-            self.luminanceThirdStep()
-            self.luminanceFourthStep()
+            self.illuminanceStep()
+            
+
         except:
             mb.showerror("ERROR","No se pudo completar apropiadamente el proceso de calculo.")
+
+            
+        self.observerBetaStep()
+        self.luminanceStep()
+        self.veilLuminanceStep()
                
         
 
@@ -129,12 +133,29 @@ class LuminanceCalculator():
             for j in range(self.N):
                 for k in range(3*self.roadLanes):      
 
-                    CeL[i][j][k] = math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*(180/math.pi)
+                    
                     GammaL[i][j][k]=math.atan((math.sqrt(math.pow(self.Px[j][k]-Lx[i],2)+math.pow(self.Py[j][k]-Ly[i],2))/self.luminairesHeight))*(180/math.pi)
-                    if(i>Nlumback):
-                        CeL[i][j][k] += 180
+                    
+                    
+                    if(self.Px[j][k]-Lx[i]==0 and self.Py[j][k]-Ly[i]==0):
+                        CeL[i][j][k] = 0
+                    elif(self.Px[j][k]-Lx[i]>0 and self.Py[j][k]-Ly[i]>=0):
+                        CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi
+                    elif(self.Px[j][k]-Lx[i]==0 and self.Py[j][k]-Ly[i]>=0):
+                        CeL[i][j][k] = 90
+                    elif(self.Px[j][k]-Lx[i]<0 and self.Py[j][k]-Ly[i]>=0):
+                        CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi+180
+                    elif(self.Px[j][k]-Lx[i]<0 and self.Py[j][k]-Ly[i]<=0):
+                        CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi+180
+                    elif(self.Px[j][k]-Lx[i]==0 and self.Py[j][k]-Ly[i]<=0):
+                        CeL[i][j][k] = 90
+                    elif(self.Px[j][k]-Lx[i]>=0 and self.Py[j][k]-Ly[i]<=0):
+                        CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi+360
 
 
+
+        self.Lx = Lx
+        self.Ly = Ly
         self.CeL = CeL
         self.GammaL = GammaL 
         self.Nlum = Nlum
@@ -574,14 +595,13 @@ class LuminanceCalculator():
         #print("ycL")
         #print(self.ycL)
     
-    # luminance
     
-    def luminanceFirstStep(self):
+    def illuminanceStep(self):
         IL = np.zeros((self.Nlum, self.N, 3*self.roadLanes))
         eq3 = np.zeros((self.N, 3*self.roadLanes))
         eq4 = np.zeros((self.N, 3*self.roadLanes))
         #print(IL)
-        #print("luminanceFirstStep")
+        #print("illuminanceStep")
         #print("Ln: " + str(3*self.roadLanes))
         #print("N: " + str(self.N))
         #print("Nlum: " + str(self.Nlum))
@@ -657,7 +677,7 @@ class LuminanceCalculator():
         #print("g2, : "+str(g2))
         #print("g3, : "+str(g3))
         
-    def luminanceSecondStep(self):
+    def observerBetaStep(self):
         # Observer
         Ox = np.zeros((self.roadLanes))
         Oy = np.zeros((self.roadLanes))
@@ -668,36 +688,58 @@ class LuminanceCalculator():
             Oy[i] = self.Py[0][1+(3*i)]
         #print(Oy)
 
-        #C en grados
-
+         
         Beta = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))
+
+        #C en grados- oldMethod
+        # for i in range(self.roadLanes):
+        #     for j in range(self.Nlum):
+        #         for k in range(self.N):
+        #             for l in range(3*self.roadLanes):
+        #                 if(j < self.Nlumback+1):
+        #                     if(self.Py[k][l] == Oy[i]):
+        #                         Beta[i][j][k][l] = 180 - self.CeL[j][k][l]
+        #                     elif(self.Py[k][l] < Oy[i]):
+        #                         Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)- self.CeL[j][k][l]
+        #                     else:
+        #                         Beta[i][j][k][l]=180-(45-(np.arctan((self.Py[k][l]-Oy[i])/(self.Px[k][l]-Ox[i]))*180/np.pi))-(self.CeL[j][k][l]-45)
+        #                 else:
+        #                     if(self.Py[k][l] == Oy[i]):
+        #                         Beta[i][j][k][l] = 180 - self.CeL[j][k][l]
+        #                     elif(self.Py[k][l] < Oy[i]):
+
+        #                         if (180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l]>=0):
+        #                             Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l]
+        #                         else:
+        #                             Beta[i][j][k][l]=np.abs(180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l])
+
+        #                         #print("TODO")
+        #                         #Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)- self.CeL[j][k][l]
+
+                                
+        #                     else:
+        #                         Beta[i][j][k][l]=180-(180-90-(np.arctan((self.Py[k][l]-Oy[i])/(self.Px[k][l]-Ox[i]))*180/np.pi))-(self.CeL[j][k][l]-90)
+        
+
+        #C en grados- newMethod
+
         for i in range(self.roadLanes):
             for j in range(self.Nlum):
                 for k in range(self.N):
                     for l in range(3*self.roadLanes):
-                        if(j < self.Nlumback+1):
-                            if(self.Py[k][l] == Oy[i]):
-                                Beta[i][j][k][l] = 180 - self.CeL[j][k][l]
-                            elif(self.Py[k][l] < Oy[i]):
-                                Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)- self.CeL[j][k][l]
-                            else:
-                                Beta[i][j][k][l]=180-(45-(np.arctan((self.Py[k][l]-Oy[i])/(self.Px[k][l]-Ox[i]))*180/np.pi))-(self.CeL[j][k][l]-45)
-                        else:
-                            if(self.Py[k][l] == Oy[i]):
-                                Beta[i][j][k][l] = 180 - self.CeL[j][k][l]
-                            elif(self.Py[k][l] < Oy[i]):
+                        u = np.zeros((2))
+                        v = np.zeros((2))
+                        u[0] = self.Lx[j]-self.Px[k][l]
+                        u[1] = -self.Ly[j]+self.Py[k][l]
+                        u = u/np.linalg.norm(u)
 
-                                if (180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l]>=0):
-                                    Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l]
-                                else:
-                                    Beta[i][j][k][l]=np.abs(180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l])
+                        v[0] = Ox[i]-self.Px[k][l]
+                        v[1] = Oy[i]-self.Py[k][l]
+                        v = v/np.linalg.norm(v)
 
-                                #print("TODO")
-                                #Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)- self.CeL[j][k][l]
+                        Beta[i][j][k][l]=(180/math.pi)*np.arccos(np.dot(v,u)/(np.linalg.norm(u)*np.linalg.norm(v)));
 
-                                
-                            else:
-                                Beta[i][j][k][l]=180-(180-90-(np.arctan((self.Py[k][l]-Oy[i])/(self.Px[k][l]-Ox[i]))*180/np.pi))-(self.CeL[j][k][l]-90);
+
         #print("BETA")
         #print(Beta)
         
@@ -758,7 +800,7 @@ class LuminanceCalculator():
         #print("tGc:")
         #print(self.tGc)
 
-    def luminanceThirdStep(self):
+    def luminanceStep(self):
         
         # load R matrix
 
@@ -824,7 +866,7 @@ class LuminanceCalculator():
         #print("Lmin: " + str(Lmin))
         #print("Lav: " + str(Lav))
 
-    def luminanceFourthStep(self):
+    def veilLuminanceStep(self):
         #GammaCL
         Nlumback = 0
         Nlumfor=int((12*(self.luminairesHeight-1.5))/self.luminairesBetweenDistance)+1
@@ -865,13 +907,13 @@ class LuminanceCalculator():
         ycL=np.ceil(yL)
 
 
-        # luminance firstStep
+        # illuminanceStep
 
         IL = np.zeros((Nlum, self.N, 3*self.roadLanes))
         eq3 = np.zeros((self.N, 3*self.roadLanes))
         eq4 = np.zeros((self.N, 3*self.roadLanes))
         #print(IL)
-        #print("luminanceFirstStep")
+        #print("illuminanceStep")
         #print("Ln: " + str(3*self.roadLanes))
         #print("N: " + str(self.N))
         #print("Nlum: " + str(Nlum))
