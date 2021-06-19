@@ -4,10 +4,8 @@ import numpy as np
 
 class LuminanceCalculator():
 
-    def __init__(self, IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 0, Fm= 0.5):
+    def __init__(self, IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 0, Fm= 100.5):
         
-
-
         self.luminariesOverhang = luminariesOverhang        
         self.luminariesDistribution = luminariesDistribution                                    # 0:Single-side-Left, 1:Single-side-Right, 2:Double-side, 3:Double-side-staggered 
         self.Fm = Fm                                                                            # default value 10
@@ -18,31 +16,20 @@ class LuminanceCalculator():
         self.luminairesRotation = -luminairesRotation                                           # Degrees
         
         
-
-        
-
         try:
             self.getMeshPoints()
             self.getGammaCCoordinates()
-            self.loadIES(loadFile = True, route = IESroute, rotationAngle = -luminairesRotation)            
-            self.getstepGammaCeL()
-            self.illuminanceStep()
-            
+            self.loadIES(loadFile = True, route = IESroute, rotationAngle = -luminairesRotation)    
+            self.getStepGammaCeL()
+            self.illuminanceStep()                
+            self.observerBetaStep()
+            self.luminanceStep()            
 
         except:
-            mb.showerror("ERROR","No se pudo completar apropiadamente el proceso de calculo.")
-
-            
-        self.observerBetaStep()
-        self.luminanceStep()
-        self.veilLuminanceStep()
-               
-        
+            mb.showerror("ERROR","ERROR: No se pudo completar apropiadamente el proceso de calculo.")
 
 
-    
-
-    
+        self.veilIlluminanceStep()
     
     def getMeshPoints(self):
         
@@ -69,7 +56,6 @@ class LuminanceCalculator():
         self.Px = Px
         self.Py = Py
         self.N = N
-
 
     def getGammaCCoordinates(self):
 
@@ -103,26 +89,24 @@ class LuminanceCalculator():
             Lx = [0 for i in range(2*Nlum)]
             for i in range(Nlum): 
                 Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
-                Ly[i] = self.luminariesOverhang
-                Lx[i+Nlumback] = -(Nlumback-i)*self.luminairesBetweenDistance                
-                Ly[i+Nlumback] = self.roadWidth - self.luminariesOverhang  
+                Lx[i+Nlum] = -(Nlumback-i)*self.luminairesBetweenDistance 
+                Ly[i] = self.luminariesOverhang                               
+                Ly[i+Nlum] = self.roadWidth - self.luminariesOverhang
+ 
             Nlum=2*Nlum
         elif(self.luminariesDistribution == 3):                                                 # 3:Double-side-staggered
             Ly = [0 for i in range(2*Nlum)]
             Lx = [0 for i in range(2*Nlum)]
             for i in range(Nlum):  
                 Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
-                Ly[i] = self.luminariesOverhang
-                Lx[i+Nlumback] = (self.luminairesBetweenDistance/2)-(Nlumback-i)*self.luminairesBetweenDistance                
-                Ly[i+Nlumback] = self.roadWidth - self.luminariesOverhang   
+                Lx[i+Nlum] = (self.luminairesBetweenDistance/2)-(Nlumback-i)*self.luminairesBetweenDistance
+                Ly[i] = self.luminariesOverhang                                
+                Ly[i+Nlum] = self.roadWidth - self.luminariesOverhang   
             Nlum=2*Nlum
 
-        for i in range(Nlum):    
-            Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
-            Ly[i] = 0
+
         
-        #print("self.Lx: + str(self.Lx))
-        #print("self.Ly: + str(self.Ly))
+
 
 
 
@@ -152,7 +136,14 @@ class LuminanceCalculator():
                     elif(self.Px[j][k]-Lx[i]>=0 and self.Py[j][k]-Ly[i]<=0):
                         CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi+360
 
+        # Upper luminaries rotation
 
+        if(self.luminariesDistribution == 2 or self.luminariesDistribution == 3):
+            for i in range(int(Nlum/2)):
+                for j in range(self.N):
+                    for k in range(3*self.roadLanes): 
+                        CeL[i+int(Nlum/2)][j][k] += 180
+                        if(CeL[i+int(Nlum/2)][j][k]>=360): CeL[i+int(Nlum/2)][j][k] -= 360    
 
         self.Lx = Lx
         self.Ly = Ly
@@ -160,11 +151,6 @@ class LuminanceCalculator():
         self.GammaL = GammaL 
         self.Nlum = Nlum
         self.Nlumback = Nlumback
-        #print("CeL")
-        #print(CeL)
-        #print("GammaL")
-        #print(GammaL)
-
 
     def loadIES(self, loadFile = True, route = "Sit4.ies", StepGamma = 5, StepC=10, rotationAngle=0):
         if(loadFile):
@@ -576,8 +562,7 @@ class LuminanceCalculator():
 
             # print((self.IES))
 
-
-    def getstepGammaCeL(self):
+    def getStepGammaCeL(self):
         # floor and ceil
         CL=self.CeL/self.StepC
         self.CL=CL
@@ -594,30 +579,11 @@ class LuminanceCalculator():
         #print(self.yfL)
         #print("ycL")
         #print(self.ycL)
-    
-    
+        
     def illuminanceStep(self):
         IL = np.zeros((self.Nlum, self.N, 3*self.roadLanes))
         eq3 = np.zeros((self.N, 3*self.roadLanes))
         eq4 = np.zeros((self.N, 3*self.roadLanes))
-        #print(IL)
-        #print("illuminanceStep")
-        #print("Ln: " + str(3*self.roadLanes))
-        #print("N: " + str(self.N))
-        #print("Nlum: " + str(self.Nlum))
-        #print("IL shape: ")
-        #print(IL.shape)
-
-        #print("eq3 shape: ")
-        #print(eq3.shape)
-        #print(len(eq3[0]))
-
-        #print("IES shape: ")
-        #print(self.IES.shape)
-
-        #print("yfL shape: ")
-        #print(self.yfL.shape)
-        #print(self.yfL)
 
         
         for i in range(self.Nlum):
@@ -631,9 +597,7 @@ class LuminanceCalculator():
                     
                     #print("i: " + str(i) + ", j: " + str(j)+ ", k: " + str(k) + ", C: " + str(int(self.CfL[i][j][k])) + ", Y: " + str(int(self.yfL[i][j][k])) + ",IL: " +  str(IL[i][j][k]) + ", eq3: " + str(eq3[j][k]) + ", eq4: " + str(eq4[j][k]) + ", c: " + str(c))      
         
-        #print("Il")
-        #print(IL.shape)
-        #print(IL) 
+
         
         Illuminance = np.zeros((self.N, 3*self.roadLanes))
         
@@ -643,7 +607,7 @@ class LuminanceCalculator():
                 for k in range(self.Nlum):
                     Illuminance[i][j] += IL[k][i][j]*pow(np.cos(self.GammaL[k][i][j]*np.pi/180),3)
 
-        #ThIncrementIlluminance = Illuminance * self.Fm / pow(self.luminairesHeight-1.5,2)     
+   
         Illuminance = Illuminance * self.Fm / pow(self.luminairesHeight,2)
 
         
@@ -661,21 +625,12 @@ class LuminanceCalculator():
         g3=Eav/Emax
 
         self.Illuminance = Illuminance
-        #self.ThIncrementIlluminance = ThIncrementIlluminance
         self.Emax = Emax
         self.Emin = Emin
         self.Eav = Eav
         self.g1 = g1
         self.g2 = g2
         self.g3 = g3
-        #print("Illuminance")
-        #print(Illuminance)
-        #print("Emax: "+str(Emax))
-        #print("Emin, : "+str(Emin))
-        #print("Eav, : "+str(Eav))
-        #print("g1, : "+str(g1))
-        #print("g2, : "+str(g2))
-        #print("g3, : "+str(g3))
         
     def observerBetaStep(self):
         # Observer
@@ -686,40 +641,8 @@ class LuminanceCalculator():
             Ox[i] = -60
             Oz[i] = 1.5
             Oy[i] = self.Py[0][1+(3*i)]
-        #print(Oy)
-
          
-        Beta = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))
-
-        #C en grados- oldMethod
-        # for i in range(self.roadLanes):
-        #     for j in range(self.Nlum):
-        #         for k in range(self.N):
-        #             for l in range(3*self.roadLanes):
-        #                 if(j < self.Nlumback+1):
-        #                     if(self.Py[k][l] == Oy[i]):
-        #                         Beta[i][j][k][l] = 180 - self.CeL[j][k][l]
-        #                     elif(self.Py[k][l] < Oy[i]):
-        #                         Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)- self.CeL[j][k][l]
-        #                     else:
-        #                         Beta[i][j][k][l]=180-(45-(np.arctan((self.Py[k][l]-Oy[i])/(self.Px[k][l]-Ox[i]))*180/np.pi))-(self.CeL[j][k][l]-45)
-        #                 else:
-        #                     if(self.Py[k][l] == Oy[i]):
-        #                         Beta[i][j][k][l] = 180 - self.CeL[j][k][l]
-        #                     elif(self.Py[k][l] < Oy[i]):
-
-        #                         if (180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l]>=0):
-        #                             Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l]
-        #                         else:
-        #                             Beta[i][j][k][l]=np.abs(180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)-self.CeL[j][k][l])
-
-        #                         #print("TODO")
-        #                         #Beta[i][j][k][l]=180-(np.arctan((Oy[i]-self.Py[k][l])/(self.Px[k][l]-Ox[i]))*180/np.pi)- self.CeL[j][k][l]
-
-                                
-        #                     else:
-        #                         Beta[i][j][k][l]=180-(180-90-(np.arctan((self.Py[k][l]-Oy[i])/(self.Px[k][l]-Ox[i]))*180/np.pi))-(self.CeL[j][k][l]-90)
-        
+        Beta = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))    
 
         #C en grados- newMethod
 
@@ -733,15 +656,16 @@ class LuminanceCalculator():
                         u[1] = -self.Ly[j]+self.Py[k][l]
                         u = u/np.linalg.norm(u)
 
-                        v[0] = Ox[i]-self.Px[k][l]
+                        v[0] = -(Ox[i]-self.Px[k][l])
                         v[1] = Oy[i]-self.Py[k][l]
                         v = v/np.linalg.norm(v)
 
-                        Beta[i][j][k][l]=(180/math.pi)*np.arccos(np.dot(v,u)/(np.linalg.norm(u)*np.linalg.norm(v)));
+                        Beta[i][j][k][l]=(180/math.pi)*np.arccos(np.dot(v,u)/(np.linalg.norm(u)*np.linalg.norm(v)))
+                        #print("i: " + str(i) + ", j: " + str(j) + ", k: " + str(k) + ", l: " + str(l) + ", u: " + str(u) + ", v: " + str(v) + ", Beta: " + str(Beta[i][j][k][l]) + ", dot: " + str(np.dot(v,u) ) ) 
 
 
-        #print("BETA")
-        #print(Beta)
+        self.Beta = Beta
+
         
         tanG=np.tan(self.GammaL*np.pi/180)
 
@@ -787,19 +711,6 @@ class LuminanceCalculator():
         self.Oy = Oy
         self.Oz = Oz
 
-        #print("B:")
-        #print(self.B)
-        #print("Bf:")
-        #print(self.Bf)
-        #print("Bc:")
-        #print(self.Bc)
-        #print("tG:")
-        #print(self.tG)
-        #print("tGf:")
-        #print(self.tGf)
-        #print("tGc:")
-        #print(self.tGc)
-
     def luminanceStep(self):
         
         # load R matrix
@@ -809,9 +720,9 @@ class LuminanceCalculator():
         R1 = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))
         eq3 = np.zeros((self.N, 3*self.roadLanes))
         eq4 = np.zeros((self.N, 3*self.roadLanes))
-        #print("R: ")
-        #print(R)
-        #print("Rtype: " +  str(R.shape))
+
+        self.R = R
+
         for i in range(self.roadLanes):
             for j in range(self.Nlum):
                 for k in range(self.N):
@@ -859,29 +770,52 @@ class LuminanceCalculator():
         self.Lmax = Lmax
         self.Lmin = Lmin
         self.Lav = Lav
-        self.luminance = luminance
-        
-        #print("luminance:" + str(luminance))
-        #print("Lmax: " + str(Lmax))
-        #print("Lmin: " + str(Lmin))
-        #print("Lav: " + str(Lav))
+        self.luminance = luminance        
 
-    def veilLuminanceStep(self):
+    def veilIlluminanceStep(self):
         #GammaCL
         Nlumback = 0
         Nlumfor=int((12*(self.luminairesHeight-1.5))/self.luminairesBetweenDistance)+1
         Nlum=Nlumback+Nlumfor+1
+        print("Veil Iluminance-------------------------------------------------------------------------------------")
         print("Nlum:"+str(Nlum))
         print("Nlumfor:"+str(Nlumfor))
         Ly = [0 for i in range(Nlum)]
         Lx = [0 for i in range(Nlum)]
 
-        for i in range(Nlum):    
-            Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
-            Ly[i] = 0
+        if(self.luminariesDistribution == 0):                                                   # 0:Single-side-Left 
+            for i in range(Nlum):    
+                Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+                Ly[i] = self.luminariesOverhang
+        elif(self.luminariesDistribution == 1):                                                 # 1:Single-side-Right
+            for i in range(Nlum):    
+                Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+                Ly[i] = self.roadWidth - self.luminariesOverhang
+
+        elif(self.luminariesDistribution == 2):                                                 # 2:Double-side
+            Ly = [0 for i in range(2*Nlum)]
+            Lx = [0 for i in range(2*Nlum)]
+            for i in range(Nlum): 
+                Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+                Lx[i+Nlum] = -(Nlumback-i)*self.luminairesBetweenDistance 
+                Ly[i] = self.luminariesOverhang                               
+                Ly[i+Nlum] = self.roadWidth - self.luminariesOverhang
+ 
+            Nlum=2*Nlum
+        elif(self.luminariesDistribution == 3):                                                 # 3:Double-side-staggered
+            Ly = [0 for i in range(2*Nlum)]
+            Lx = [0 for i in range(2*Nlum)]
+            for i in range(Nlum):  
+                Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
+                Lx[i+Nlum] = (self.luminairesBetweenDistance/2)-(Nlumback-i)*self.luminairesBetweenDistance
+                Ly[i] = self.luminariesOverhang                                
+                Ly[i+Nlum] = self.roadWidth - self.luminariesOverhang   
+            Nlum=2*Nlum
+
         
 
         print("Lx" + str(Lx))
+        print("Ly" + str(Ly))
         #print("self.Py")
         #print(self.Py)
 
@@ -893,11 +827,31 @@ class LuminanceCalculator():
             for j in range(self.N):
                 for k in range(3*self.roadLanes):      
 
-                    CeL[i][j][k] = math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*(180/math.pi)
-                    GammaL[i][j][k]=math.atan((math.sqrt(math.pow(self.Px[j][k]-Lx[i],2)+math.pow(self.Py[j][k]-Ly[i],2))/(self.luminairesHeight-1.5)))*(180/math.pi)
-                    if(i>Nlumback):
-                        CeL[i][j][k] += 180
+                    GammaL[i][j][k]=math.atan((math.sqrt(math.pow(self.Px[j][k]-Lx[i],2)+math.pow(self.Py[j][k]-Ly[i],2))/self.luminairesHeight))*(180/math.pi)
+                    
+                    
+                    if(self.Px[j][k]-Lx[i]==0 and self.Py[j][k]-Ly[i]==0):
+                        CeL[i][j][k] = 0
+                    elif(self.Px[j][k]-Lx[i]>0 and self.Py[j][k]-Ly[i]>=0):
+                        CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi
+                    elif(self.Px[j][k]-Lx[i]==0 and self.Py[j][k]-Ly[i]>=0):
+                        CeL[i][j][k] = 90
+                    elif(self.Px[j][k]-Lx[i]<0 and self.Py[j][k]-Ly[i]>=0):
+                        CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi+180
+                    elif(self.Px[j][k]-Lx[i]<0 and self.Py[j][k]-Ly[i]<=0):
+                        CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi+180
+                    elif(self.Px[j][k]-Lx[i]==0 and self.Py[j][k]-Ly[i]<=0):
+                        CeL[i][j][k] = 90
+                    elif(self.Px[j][k]-Lx[i]>=0 and self.Py[j][k]-Ly[i]<=0):
+                        CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi+360
+        # Upper luminaries rotation
 
+        if(self.luminariesDistribution == 2 or self.luminariesDistribution == 3):
+            for i in range(int(Nlum/2)):
+                for j in range(self.N):
+                    for k in range(3*self.roadLanes): 
+                        CeL[i+int(Nlum/2)][j][k] += 180
+                        if(CeL[i+int(Nlum/2)][j][k]>=360): CeL[i+int(Nlum/2)][j][k] -= 360   
 
         CL=CeL/self.StepC
         CfL=np.floor(CL)
@@ -1007,18 +961,63 @@ class LuminanceCalculator():
         print(fTI)
 
     # Extras
-    def printData(self):
+
+    def printGetMeshPointsData(self):
+        print("------------------------------------")
+        print("Px:" + str(self.Px))
+        print("Py:" + str(self.Py))
+
+    def printGetGammaCCoordinatesData(self):
+        print("------------------------------------")
+        print("Nlum:" + str(self.Nlum))
+        print("Lx:" + str(self.Lx))
+        print("Ly:" + str(self.Ly))
+        print("CeL:" + str(self.CeL))
+        print("GammaL:" + str(self.GammaL))
+
+    def printIES(self):
+        print("------------------------------------")
+        print("IES: " + str(self.IES))
+
+    def printGetStepGammaCeLData(self):
+        print("------------------------------------")
+        print("yL:" + str(self.yL))
+        print("CL:" + str(self.CL))
+
+    def printIlluminanceStepData(self):
+        print("------------------------------------")
+        print("IL: " + str(self.IL))
+        print("Illuminance:" + str(self.Illuminance))        
+        print("Emax: " + str(self.Emax))
+        print("Emin: " + str(self.Emin))
+        print("Eav: " + str(self.Eav))
+        print("g1: "+str(self.g1))
+        print("g2: "+str(self.g2))
+        print("g3: "+str(self.g3))
+    
+    def printObserverBetaStepData(self):
+        print("------------------------------------")
+        print("Ox:" + str(self.Ox))
+        print("Oy:" + str(self.Oy))
+        print("Oz:" + str(self.Oz))
+        print("Beta:" + str(self.Beta))
+        print("tG:" + str(self.tG))
+        print("B:" + str(self.B))
+
+    def printLuminanceStepData(self):
+        print("------------------------------------")
+        print("R:" + str(self.R))
+        print("luminance:" + str(self.luminance))
+        print("Lmax: " + str(self.Lmax))
+        print("Lmin: " + str(self.Lmin))
+        print("Lav: " + str(self.Lav))
+
+    def printFinalData(self):
         print("Px: ")
         print(self.Px)
         print("Py: ")
         print(self.Py)
 
-        print("------------------------------------")
-        print("luminance:" + str(self.luminance))
-        print("Lmax: " + str(self.Lmax))
-        print("Lmin: " + str(self.Lmin))
-        print("Lav: " + str(self.Lav))
-    
         print("------------------------------------")
         print("Illuminance:" + str(self.Illuminance))
         print("Emax: " + str(self.Emax))
@@ -1026,11 +1025,30 @@ class LuminanceCalculator():
         print("Eav: " + str(self.Eav))
 
 
+        print("------------------------------------")
+        print("luminance:" + str(self.luminance))
+        print("Lmax: " + str(self.Lmax))
+        print("Lmin: " + str(self.Lmin))
+        print("Lav: " + str(self.Lav))
+
+    def printVeilIlluminanceStepData(self):
+        print("------------------------------------")
+
+
+
 def main():
 
-    test = LuminanceCalculator(IESroute="Sit1.ies", luminairesHeight = 4, luminairesBetweenDistance = 20, roadWidth = 10, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 0, Fm= 0.5)
+    test = LuminanceCalculator(IESroute="Sit4.ies", luminairesHeight = 4, luminairesBetweenDistance = 20, roadWidth = 10, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 2, Fm= 0.5)
+    #test.printGetMeshPointsData()
+    #test.printGetGammaCCoordinatesData()
+    #test.printIES()
+    #test.printGetStepGammaCeLData()
+    #test.printIlluminanceStepData()
+    #test.printObserverBetaStepData()
+    #test.printLuminanceStepData()
+    #test.printFinalData()
 
-    test.printData()
+
 
 
 
