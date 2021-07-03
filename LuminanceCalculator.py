@@ -3,6 +3,7 @@ import math
 import numpy as np
 
 class LuminanceCalculator():
+    """This class is used to perform all calculations required to get luminance data for only one section of the tunnel."""
 
     def __init__(self, IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 0, Fm= 100.5):
         
@@ -32,7 +33,7 @@ class LuminanceCalculator():
         self.veilIlluminanceStep()
     
     def getMeshPoints(self):
-        
+        """Get Mesh coordinates from interdistance requirements.""" 
         if self.luminairesBetweenDistance <= 30:
             N = 10
             D = self.luminairesBetweenDistance/10   
@@ -58,6 +59,7 @@ class LuminanceCalculator():
         self.N = N
 
     def getGammaCCoordinates(self):
+        """Get luminaries coordinates from the selected distribution, calculates the matrix coordinates for C and Gamma for each luminaire, lastly rotates these matrices according to the distribution and the position of the luminaire."""
 
         if not (0 <=self.luminariesDistribution <=3):
             mb.showerror("ERROR","Ditribución de luminarias indefinida.")
@@ -75,11 +77,12 @@ class LuminanceCalculator():
         Lx = [0 for i in range(Nlum)]         
            
 
-        if(self.luminariesDistribution == 0):                                                   # 0:Single-side-Left 
+        if(self.luminariesDistribution == 0):                                                   # 0:Single-side-Right
             for i in range(Nlum):    
                 Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
                 Ly[i] = self.luminariesOverhang
-        elif(self.luminariesDistribution == 1):                                                 # 1:Single-side-Right
+
+        elif(self.luminariesDistribution == 1):                                                 # 1:Single-side-Left
             for i in range(Nlum):    
                 Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
                 Ly[i] = self.roadWidth - self.luminariesOverhang
@@ -103,11 +106,6 @@ class LuminanceCalculator():
                 Ly[i] = self.luminariesOverhang                                
                 Ly[i+Nlum] = self.roadWidth - self.luminariesOverhang   
             Nlum=2*Nlum
-
-
-        
-
-
 
 
         CeL = np.zeros((Nlum, self.N, 3*self.roadLanes))
@@ -138,7 +136,14 @@ class LuminanceCalculator():
 
         # Upper luminaries rotation
 
-        if(self.luminariesDistribution == 2 or self.luminariesDistribution == 3):
+        if(self.luminariesDistribution == 1):
+            for i in range(int(Nlum)):
+                for j in range(self.N):
+                    for k in range(3*self.roadLanes): 
+                        CeL[i][j][k] += 180
+                        if(CeL[i][j][k]>=360): CeL[i][j][k] -= 360   
+
+        elif(self.luminariesDistribution == 2 or self.luminariesDistribution == 3):
             for i in range(int(Nlum/2)):
                 for j in range(self.N):
                     for k in range(3*self.roadLanes): 
@@ -153,8 +158,9 @@ class LuminanceCalculator():
         self.Nlumback = Nlumback
 
     def loadIES(self, loadFile = True, route = "Sit4.ies", StepGamma = 5, StepC=10, rotationAngle=0):
-        if(loadFile):
 
+        """Load photometry data, from an IES file. Interpolates and rotates the data, according to the input parameters."""
+        if(loadFile):
             
             self.StepGamma=StepGamma
             self.StepC=StepC
@@ -197,9 +203,9 @@ class LuminanceCalculator():
                 if(unitsType != 2 ):
                     raise metricSystem
                 i+=5
-                width = float(iesText[i])
-                length = float(iesText[i+1])
-                height = float(iesText[i+2])
+                #width = float(iesText[i])
+                #length = float(iesText[i+1])
+                #height = float(iesText[i+2])
                 #if not (width != 0 and length != 0 and height != 0):
                 #    raise unsupportedGeometry
                 i+=6
@@ -329,12 +335,13 @@ class LuminanceCalculator():
                     elif(rawCFSO == 90):                                                        # Csize = 90
                         #print("auxIES_RLD:")
                         # look for j index
-                        j90 = 0
+                        #j90 = 0
                         j180 = 0
                         j360 = 0
                         for j in range(auxIESCSize):
                             if(auxCIndex[j] == 90):
-                                j90 = j
+                                #j90 = j
+                                pass
                             elif(auxCIndex[j] == 180):
                                 j180 = j
                             elif(auxCIndex[j] == 360):
@@ -482,19 +489,19 @@ class LuminanceCalculator():
                             COx = nearOverCIndex-1
                             CFx = nearOverCIndex    
 
-                            # Calculation 
+                            # Calculation
                             
 
                             m1 = (auxIES[COx][GammaFx] - auxIES[COx][GammaOx])/(GammaF-GammaO)
                             IGiCO =  (m1 * (wantedGamma-GammaO)) + auxIES[COx][GammaOx]
 
                             m2 = (auxIES[CFx][GammaFx] - auxIES[CFx][GammaOx])/(GammaF-GammaO)
-                            IGiCF =  (m1 * (wantedGamma-GammaO)) + auxIES[CFx][GammaOx]
+                            IGiCF =  (m2 * (wantedGamma-GammaO)) + auxIES[CFx][GammaOx]
 
                             m = (IGiCF - IGiCO)/(CF-CO)
                             preRotationIES[j][k] =  (m * (wantedC-CO)) + IGiCO
 
-                # User Rotation:
+                # Final User Rotation:
                  
                 #print("rotationAngle: " + str(rotationAngle))
                                                                   
@@ -563,6 +570,8 @@ class LuminanceCalculator():
             # print((self.IES))
 
     def getStepGammaCeL(self):
+
+        """Get the yL, and floored/ceiled Gamma and C coordinates matrices, to be usable as integer indexes for the photometry matrix in the illuminance calculation."""
         # floor and ceil
         CL=self.CeL/self.StepC
         self.CL=CL
@@ -581,6 +590,8 @@ class LuminanceCalculator():
         #print(self.ycL)
         
     def illuminanceStep(self):
+        """This function executes the illuminance calculation according to the norm."""
+
         IL = np.zeros((self.Nlum, self.N, 3*self.roadLanes))
         eq3 = np.zeros((self.N, 3*self.roadLanes))
         eq4 = np.zeros((self.N, 3*self.roadLanes))
@@ -593,7 +604,7 @@ class LuminanceCalculator():
                     eq3[j][k]=self.IES[int(self.CfL[i][j][k])][int(self.yfL[i][j][k])]+((self.CL[i][j][k]-self.CfL[i][j][k])/(self.CcL[i][j][k]-self.CfL[i][j][k]))*(self.IES[int(self.CcL[i][j][k])][int(self.yfL[i][j][k])]-self.IES[int(self.CfL[i][j][k])][int(self.yfL[i][j][k])])
                     eq4[j][k]=self.IES[int(self.CfL[i][j][k])][int(self.ycL[i][j][k])]+((self.CL[i][j][k]-self.CfL[i][j][k])/(self.CcL[i][j][k]-self.CfL[i][j][k]))*(self.IES[int(self.CcL[i][j][k])][int(self.ycL[i][j][k])]-self.IES[int(self.CfL[i][j][k])][int(self.ycL[i][j][k])])
                     IL[i][j][k]=eq3[j][k]+((self.yL[i][j][k]-self.yfL[i][j][k])/(self.ycL[i][j][k]-self.yfL[i][j][k]))*(eq4[j][k]-eq3[j][k])
-                    c = self.IES[int(self.CfL[i][j][k])][int(self.yfL[i][j][k])]
+                    #c = self.IES[int(self.CfL[i][j][k])][int(self.yfL[i][j][k])]
                     
                     #print("i: " + str(i) + ", j: " + str(j)+ ", k: " + str(k) + ", C: " + str(int(self.CfL[i][j][k])) + ", Y: " + str(int(self.yfL[i][j][k])) + ",IL: " +  str(IL[i][j][k]) + ", eq3: " + str(eq3[j][k]) + ", eq4: " + str(eq4[j][k]) + ", c: " + str(c))      
         
@@ -612,13 +623,13 @@ class LuminanceCalculator():
 
         
         
-        Emax=np.max(Illuminance);
+        Emax=np.max(Illuminance)
         Emax=np.max(Emax)
         
         self.IL = IL
-        Emin=np.min(Illuminance);
+        Emin=np.min(Illuminance)
         Emin=np.min(Emin)
-        Eav=np.mean(Illuminance);
+        Eav=np.mean(Illuminance)
         Eav=np.mean(Eav)
         g1=Emin/Eav
         g2=Emin/Emax
@@ -633,6 +644,8 @@ class LuminanceCalculator():
         self.g3 = g3
         
     def observerBetaStep(self):
+        """Calculates the observer coordinates vectors for luminance calculation.""" 
+
         # Observer
         Ox = np.zeros((self.roadLanes))
         Oy = np.zeros((self.roadLanes))
@@ -712,7 +725,8 @@ class LuminanceCalculator():
         self.Oz = Oz
 
     def luminanceStep(self):
-        
+        """This function executes the luminance calculation according to the norm."""
+
         # load R matrix
 
         R = np.loadtxt("t.txt")
@@ -773,6 +787,8 @@ class LuminanceCalculator():
         self.luminance = luminance        
 
     def veilIlluminanceStep(self):
+        """This function executes the Veil Illuminance calculation according to the norm."""
+
         #GammaCL
         Nlumback = 0
         Nlumfor=int((12*(self.luminairesHeight-1.5))/self.luminairesBetweenDistance)+1
@@ -783,14 +799,15 @@ class LuminanceCalculator():
         Ly = [0 for i in range(Nlum)]
         Lx = [0 for i in range(Nlum)]
 
-        if(self.luminariesDistribution == 0):                                                   # 0:Single-side-Left 
+        if(self.luminariesDistribution == 0):                                                   # 0:Single-side-Right
             for i in range(Nlum):    
                 Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
                 Ly[i] = self.luminariesOverhang
-        elif(self.luminariesDistribution == 1):                                                 # 1:Single-side-Right
+        elif(self.luminariesDistribution == 1):                                                 # 1:Single-side-Left
             for i in range(Nlum):    
                 Lx[i] = -(Nlumback-i)*self.luminairesBetweenDistance
                 Ly[i] = self.roadWidth - self.luminariesOverhang
+
 
         elif(self.luminariesDistribution == 2):                                                 # 2:Double-side
             Ly = [0 for i in range(2*Nlum)]
@@ -844,9 +861,19 @@ class LuminanceCalculator():
                         CeL[i][j][k] = 90
                     elif(self.Px[j][k]-Lx[i]>=0 and self.Py[j][k]-Ly[i]<=0):
                         CeL[i][j][k]=math.atan((self.Py[j][k]-Ly[i])/(self.Px[j][k]-Lx[i]))*180/math.pi+360
+
+
         # Upper luminaries rotation
 
-        if(self.luminariesDistribution == 2 or self.luminariesDistribution == 3):
+
+        if(self.luminariesDistribution == 1):
+            for i in range(int(Nlum)):
+                for j in range(self.N):
+                    for k in range(3*self.roadLanes): 
+                        CeL[i][j][k] += 180
+                        if(CeL[i][j][k]>=360): CeL[i][j][k] -= 360   
+
+        elif(self.luminariesDistribution == 2 or self.luminariesDistribution == 3):
             for i in range(int(Nlum/2)):
                 for j in range(self.N):
                     for k in range(3*self.roadLanes): 
@@ -963,11 +990,14 @@ class LuminanceCalculator():
     # Extras
 
     def printGetMeshPointsData(self):
+        """Print Mesh coordinates.""" 
         print("------------------------------------")
         print("Px:" + str(self.Px))
         print("Py:" + str(self.Py))
 
     def printGetGammaCCoordinatesData(self):
+        """ Print luminaries coordinates + C and Gamma coordinates matrices for each luminaire.""" 
+
         print("------------------------------------")
         print("Nlum:" + str(self.Nlum))
         print("Lx:" + str(self.Lx))
@@ -976,15 +1006,19 @@ class LuminanceCalculator():
         print("GammaL:" + str(self.GammaL))
 
     def printIES(self):
+        """Print full photometry data."""
         print("------------------------------------")
         print("IES: " + str(self.IES))
 
     def printGetStepGammaCeLData(self):
+        """ Print C and Gamma coordinates matrices, floored/ceiled that are used as integer indexes for the photometry data."""
+
         print("------------------------------------")
         print("yL:" + str(self.yL))
         print("CL:" + str(self.CL))
 
     def printIlluminanceStepData(self):
+        """Print all the results of illuminance calculation."""
         print("------------------------------------")
         print("IL: " + str(self.IL))
         print("Illuminance:" + str(self.Illuminance))        
@@ -996,6 +1030,7 @@ class LuminanceCalculator():
         print("g3: "+str(self.g3))
     
     def printObserverBetaStepData(self):
+        """Print the observer coordinates used at luminance calculations."""
         print("------------------------------------")
         print("Ox:" + str(self.Ox))
         print("Oy:" + str(self.Oy))
@@ -1005,6 +1040,7 @@ class LuminanceCalculator():
         print("B:" + str(self.B))
 
     def printLuminanceStepData(self):
+        """Print all the results of illuminance calculation."""
         print("------------------------------------")
         print("R:" + str(self.R))
         print("luminance:" + str(self.luminance))
@@ -1013,6 +1049,8 @@ class LuminanceCalculator():
         print("Lav: " + str(self.Lav))
 
     def printFinalData(self):
+        """Prints a nutshell of the calculated data."""
+
         print("Px: ")
         print(self.Px)
         print("Py: ")
@@ -1032,21 +1070,22 @@ class LuminanceCalculator():
         print("Lav: " + str(self.Lav))
 
     def printVeilIlluminanceStepData(self):
+        """Print Veil Illuminance data."""
         print("------------------------------------")
 
 
 
 def main():
 
-    test = LuminanceCalculator(IESroute="Sit4.ies", luminairesHeight = 4, luminairesBetweenDistance = 20, roadWidth = 10, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 2, Fm= 0.5)
+    test = LuminanceCalculator(IESroute="Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
     #test.printGetMeshPointsData()
     #test.printGetGammaCCoordinatesData()
     #test.printIES()
     #test.printGetStepGammaCeLData()
     #test.printIlluminanceStepData()
     #test.printObserverBetaStepData()
-    #test.printLuminanceStepData()
-    #test.printFinalData()
+    test.printLuminanceStepData()
+    test.printFinalData()
 
 
 
