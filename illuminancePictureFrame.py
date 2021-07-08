@@ -10,15 +10,12 @@ class illuminancePictureFrame(tk.Frame):
         self.initVariables()             
         self.initUI()
         
-        
-    
     def initSelectionEvents(self):
 
         if self.binder != None:
             self.myCanvas.unbind("<Button-1>",self.binder)
         self.binder= self.myCanvas.bind("<Button-1>",self.markArea)        
         
-
     def initVariables(self):
 
         self.binder = None              # Gestor de eventos
@@ -61,15 +58,12 @@ class illuminancePictureFrame(tk.Frame):
 
         self.renderedTunnelImage = None
 
-
-
-
     def initUI(self):
         # Canvas para dibujo de circulos
 
         self.myCanvas = tk.Canvas(self, width=self.widowsSizeX, height=self.widowsSizeY, borderwidth=0, highlightthickness=0,background="black" )
 
-        self.loadImage("image.jpg",escalate=True)
+        self.loadImage("L20DefaultImage.jpg",escalate=True)
 
         self.drawImage()
         self.drawInnerCircle()
@@ -82,7 +76,7 @@ class illuminancePictureFrame(tk.Frame):
         self.myCanvas.place(x = self.winfo_rootx(), y=self.winfo_rooty())
         self.myCanvas.pack()
         
-    def loadImage(self,route="image.jpg",escalate=False):
+    def loadImage(self,route="L20DefaultImage.jpg",escalate=False):
 
         # Catch_try TODO
         # Cargar imagen:
@@ -152,7 +146,6 @@ class illuminancePictureFrame(tk.Frame):
                 self.myCanvas.delete(self.lines[i])
             self.lines[i]= (self.myCanvas.create_line(x1, y1, x2, y2 ,width=1, fill = "white")) 
 
-
     def clearALL(self):
         self.myCanvas.delete("all")
         # Estructura de datos con los circulos a dibujar
@@ -166,14 +159,11 @@ class illuminancePictureFrame(tk.Frame):
         # [anillo][arco], [radio][radianes]
         self.areaMatrix = [[None for i in range(50)] for j in range(50)]
 
-
-
     # CallBacks:
     def doSomething(self,event):
         print("test mouse")
         print(event.x)
         print(event.y)
-
 
     def reset(self, route="image.jpg", escalate = False):
         self.clearALL()
@@ -182,10 +172,6 @@ class illuminancePictureFrame(tk.Frame):
             self.binder = None
         self.loadImage(route,escalate = escalate)
         self.drawImage()
-        
-        
-
-        
 
     def firsStep(self , newGridCenterOffsetX=0, newGridCenterOffsetY=0, newInteriorCircleRadius=50, SD=100, entranceRadiusMeters = 5):
         
@@ -208,7 +194,6 @@ class illuminancePictureFrame(tk.Frame):
         self.circleSize = int( SD * (newInteriorCircleRadius/entranceRadiusMeters) * math.tan(math.pi/18))
         # Primer paso, redibujar el circulo interior para ajustar radio y offset
         self.drawInnerCircle()
-
 
     def secondStep(self, newCircleQuantity = 8, newhalfAngleQuantity=12):
 
@@ -326,7 +311,6 @@ class illuminancePictureFrame(tk.Frame):
 
             #self.myCanvas.pack()
 
-
     def selectMaterial(self, newMaterial):
         if self.binder != None:
             self.myCanvas.unbind("<Button-1>",self.binder)
@@ -385,7 +369,6 @@ class illuminancePictureFrame(tk.Frame):
                
                 self.areaMatrix[i][j] = (self.getArea(i),material)   
 
-
     def getTotalAreas(self, percentageArray):
         partialAreasArray =[0 for i in range(7)]
         
@@ -420,8 +403,6 @@ class illuminancePictureFrame(tk.Frame):
             print(percentageArray)
             print(percentageArray[0]+percentageArray[1]+percentageArray[2]+percentageArray[3]+percentageArray[4]+percentageArray[5]+percentageArray[6])
 
-
-
     # Funciones auxiliares
     def getArea(self,rRegion):
         area = 0    
@@ -431,6 +412,7 @@ class illuminancePictureFrame(tk.Frame):
             area = (pow(self.circlesRadiusArray[rRegion],2)-pow(self.circlesRadiusArray[rRegion-1],2))*((math.pi/self.halfAngleQuantity)/2)
         print("Area: " + str(area))
         return area
+
     def create_circle(self,x, y, r, color, canvasName): #center coordinates, radius
         x0 = x - r
         y0 = y - r
@@ -447,8 +429,7 @@ class Application(tk.Frame):
         self.master.title("Lux Tunnel")
 
         for r in range(6):
-            self.master.rowconfigure(r, weight=1)
-        
+            self.master.rowconfigure(r, weight=1)        
 
         #Frame importante
         Frame1 = illuminancePictureFrame()
@@ -477,9 +458,6 @@ class Application(tk.Frame):
         
 
         # Frames relleno
-         
-
-
 
 def main():
 
@@ -493,6 +471,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-# Rocas
-# Construcciones
-# Nieve

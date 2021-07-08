@@ -1,12 +1,17 @@
+# pip3 install fpdf2
+
 from tkinter import messagebox as mb
 import math
 import numpy as np
 
+
+
+
 class LuminanceCalculator():
     """This class is used to perform all calculations required to get luminance data for only one section of the tunnel."""
 
-    def __init__(self, IESroute="Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 0, Fm= 100.5):
-        
+    def __init__(self, IESroute="Fotometrias/Sit4.ies", luminairesHeight = 10, luminairesBetweenDistance = 40, roadWidth = 25, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 0, luminariesDistribution = 0, Fm= 0.5):
+        self.IESroute = IESroute
         self.luminariesOverhang = luminariesOverhang        
         self.luminariesDistribution = luminariesDistribution                                    # 0:Single-side-Left, 1:Single-side-Right, 2:Double-side, 3:Double-side-staggered 
         self.Fm = Fm                                                                            # default value 10
@@ -62,7 +67,7 @@ class LuminanceCalculator():
         """Get luminaries coordinates from the selected distribution, calculates the matrix coordinates for C and Gamma for each luminaire, lastly rotates these matrices according to the distribution and the position of the luminaire."""
 
         if not (0 <=self.luminariesDistribution <=3):
-            mb.showerror("ERROR","Ditribución de luminarias indefinida.")
+            mb.showerror("ERROR","Distribución de luminarias indefinida.")
             raise Exception   
 
 
@@ -562,7 +567,7 @@ class LuminanceCalculator():
 
         else:
 
-            self.IES = np.loadtxt("proof.txt")
+            self.IES = np.loadtxt("DefaultRawIES.txt")
             self.StepGamma=5
             self.StepC=10
             self.Indexgamma=180/5+1
@@ -729,7 +734,7 @@ class LuminanceCalculator():
 
         # load R matrix
 
-        R = np.loadtxt("t.txt")
+        R = np.loadtxt("RMatrix.txt")
         # Beta Interpolation
         R1 = np.zeros((self.roadLanes,self.Nlum,self.N, 3*self.roadLanes))
         eq3 = np.zeros((self.N, 3*self.roadLanes))
@@ -914,7 +919,7 @@ class LuminanceCalculator():
 
         print("Nlum: " + str(Nlum))
         print("N: " + str(self.N))
-        print("3XroadLanes: " + str(3*self.roadLanes))
+        print("3 x roadLanes: " + str(3*self.roadLanes))
         
         for i in range(Nlum):
             for j in range(self.N):
@@ -1061,6 +1066,10 @@ class LuminanceCalculator():
         print("Emax: " + str(self.Emax))
         print("Emin: " + str(self.Emin))
         print("Eav: " + str(self.Eav))
+        print("g1: " + str(self.g1))
+        print("g2: " + str(self.g2))
+        print("g3: " + str(self.g3))
+
 
 
         print("------------------------------------")
@@ -1075,17 +1084,20 @@ class LuminanceCalculator():
 
 
 
+
 def main():
 
-    test = LuminanceCalculator(IESroute="Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
+    test = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
     #test.printGetMeshPointsData()
     #test.printGetGammaCCoordinatesData()
     #test.printIES()
     #test.printGetStepGammaCeLData()
     #test.printIlluminanceStepData()
     #test.printObserverBetaStepData()
-    test.printLuminanceStepData()
+    #test.printLuminanceStepData()    
     test.printFinalData()
+
+
 
 
 
