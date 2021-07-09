@@ -1,9 +1,10 @@
 from create_table_fpdf2 import PDF
 from LuminanceCalculator import LuminanceCalculator
+from L20Calculator import L20Calculator
 
 class PDFGenerator():
     
-    def exportLuminanceData(self, route="LuminanceData", sections=[LuminanceCalculator()]):
+    def exportData(self, l20=L20Calculator(), route="LuminanceData", luminanceTunnelEntranceImageRoute="L20DefaultImage.jpg", sections=[LuminanceCalculator()]):
         """
         Export Luminance Data to a PDF file
         """
@@ -22,11 +23,82 @@ class PDFGenerator():
                              "Zona del interior",
                              "Zona de salida"]
 
+        # L20
+        pdf.add_page()
 
+        # Data Organization:
+        # L20 Input
+        mountainTarrain = ["No", "Si"]
+        cardinalDirection = ["Norte", "Occidente", "Sur", "Oriente"]
+        L20InputDataArray = [
+            ["Parametro", "Valor"], 
+            ["Velocidad maxima en la entrada del túnel", str(l20.maxSpeed)+" km/h"],
+            ["Pendiente de la carretera", str(l20.slope)+"º"],
+            ["Terreno montañoso", mountainTarrain[l20.MountainousTerrain]],
+            ["Orientación hacia el túnel", cardinalDirection[l20.cardinalDirection]],
+            ["Hemisferio", cardinalDirection[2*l20.Hemisphere]],
+            ["Porcentaje de area de cielo","{:.2f}".format(l20.percentArray[0]*100) +" %"],
+            ["Porcentaje de area de pavimento","{:.2f}".format(l20.percentArray[1]*100) +" %"],
+            ["Porcentaje de area de rocas","{:.2f}".format(l20.percentArray[2]*100) +" %"],
+            ["Porcentaje de area de construcciones","{:.2f}".format(l20.percentArray[3]*100) +" %"],
+            ["Porcentaje de area de nieve","{:.2f}".format(l20.percentArray[4]*100) +" %"],
+            ["Porcentaje de area de vegetacion","{:.2f}".format(l20.percentArray[5]*100) +" %"],
+        ]
+
+        L20OutputDataArray = [
+            ["Parametro", "Valor"],
+            ["Distancia de parada","{:.4f}".format(l20.SD) + " m"],
+            ["Factor k","{:.2f}".format(l20.k)],
+            ["Fricción sobre el pavimento mojado","{:.2f}".format(l20.f)],
+            ["Luminancia cielo (Lc)", "{:.4f}".format(l20.Lc) + " cd/m2"],
+            ["Luminancia carretera (Lr)", "{:.4f}".format(l20.Lr) + " cd/m2"],
+            ["Luminancia rocas (LeR)", "{:.4f}".format(l20.LeRocks) + " cd/m2"],
+            ["Luminancia construcciones (LeB)", "{:.4f}".format(l20.LeBuildings) + " cd/m2"],
+            ["Luminancia nieve (LeS)", "{:.4f}".format(l20.LeSnow) + " cd/m2"],
+            ["Luminancia vegetacion (LeM)", "{:.4f}".format(l20.LeMeadows) + " cd/m2"],
+            ["Luminancia umbral, entrada del túnel (Lth)", "{:.4f}".format(l20.Lth) + " cd/m2"],
+
+
+              
+        
+        ]
+
+
+
+        # Section Title
+        pdf.set_font("Times", "B", size=20)
+        pdf.cell(80, 10, "L20: Calculo de Luminancia Umbral", border = False)
+        pdf.ln(h=10)
+        pdf.line(pdf.x,pdf.y,pdf.x+180,pdf.y)
+        pdf.ln(5)
+        
+        # Input Parameters
+        pdf.set_font("Times", "B", size=15)
+        pdf.cell(80, 10, "Parametros de entrada:", border = False)
+        pdf.ln(h=15)
+        pdf.set_font("Times", size=9)
+        pdf.create_table(table_data = L20InputDataArray, cell_width="uneven", x_start=20)
+        pdf.image(luminanceTunnelEntranceImageRoute, pdf.x + 105, pdf.y - 70, 70)
+        pdf.ln()
+
+        # Output Parameters
+        pdf.set_font("Times", "B", size=15)
+        pdf.cell(80, 10, "Resultados:", border = False)
+        pdf.ln(h=15)
+        pdf.set_font("Times", size=9)
+        pdf.create_table(table_data = L20OutputDataArray, cell_width="uneven", x_start=20)
+        pdf.ln()
+
+
+        # Tunnel Sections
         for index, section in enumerate(sections):
             pdf.add_page()
             
             # Data Organization:
+
+            
+
+            # luminanceInput
             inputDataArray = [
                 ["Parametro", "Valor"], 
                 ["Altura de luminarias", str(section.luminairesHeight)+" m"],
@@ -45,9 +117,9 @@ class PDFGenerator():
             illuminanceDataArray[0][0] = "C/Gamma?"
 
             for i in range(len(illuminanceDataArray[0])-1):
-                illuminanceDataArray[0][i+1] = str(section.StepGamma*i) + "º"
+                illuminanceDataArray[0][i+1] = str(section.StepGamma*i) + " m"
             for i in range(len(illuminanceDataArray)-1):
-                illuminanceDataArray[i+1][0] = str(section.StepC*i) + "º"
+                illuminanceDataArray[i+1][0] = str(section.StepC*i) + " m"
             for i in range(section.N):
                 for j in range(3*section.roadLanes):
                     illuminanceDataArray[i+1][j+1] =  "{:.4f}".format(section.Illuminance[i][j]) + " lx?"
@@ -61,15 +133,15 @@ class PDFGenerator():
             # Luminance
             luminanceDataArray = [[["" for i in range(3*section.roadLanes+1)] for j in range(section.N+1) ] for k in range(section.roadLanes)]
             for i in range(section.roadLanes):
-                luminanceDataArray[i][0][0] = "C/Gamma?"
+                luminanceDataArray[i][0][0] = "x/y"
 
             for i in range(len(luminanceDataArray[0][0])-1):
                 for j in range(section.roadLanes):
-                    luminanceDataArray[j][0][i+1] = str(section.StepGamma*i) + "º"
+                    luminanceDataArray[j][0][i+1] = "{:.2f}".format(section.Py[0][i]) + " m"
 
             for i in range(len(luminanceDataArray[0])-1):
                 for j in range(section.roadLanes):
-                    luminanceDataArray[j][i+1][0] = str(section.StepC*i) + "º"
+                    luminanceDataArray[j][i+1][0] = "{:.2f}".format(section.Px[i][0]) + " m"
 
             for i in range(section.roadLanes):
                 for j in range(section.N):
@@ -116,7 +188,11 @@ class PDFGenerator():
             pdf.ln(h=8)
             pdf.set_font("Times", size=6)
             pdf.create_table(table_data = illuminanceDataArray, cell_width="even", x_start=20, align_data = "C", align_header="C")
-            pdf.ln()
+            pdf.set_font("Times", "I", size=7)
+            pdf.multi_cell(0, 10, "\"x\" = coordenadas longitudinales, depende de la distancia entre luminarias y su distribución. \"y\" =  coordenadas transversales, depende del ancho de la carretera.", border = False,  align="C")
+            pdf.ln(h=1)
+
+
 
             pdf.set_font("Times", size=12)
             pdf.cell(65, 10, "Resumen Iluminancia:", border = False, align="C")
@@ -132,10 +208,12 @@ class PDFGenerator():
                 pdf.ln(h=8)
                 pdf.set_font("Times", size=6)
                 pdf.create_table(table_data = luminanceDataArray[i], cell_width="even", x_start=20, align_data = "C", align_header="C")
-                pdf.ln()
+                pdf.set_font("Times", "I", size=7)
+                pdf.multi_cell(0, 10, "\"x\" = coordenadas longitudinales, depende de la distancia entre luminarias y su distribución. \"y\" =  coordenadas transversales, depende del ancho de la carretera.", border = False,  align="C")
+                pdf.ln(h=1)
 
                 pdf.set_font("Times", size=12)
-                pdf.cell(65, 10, "Resumen luminancia del observador "+ str(i) + ":", border = False, align="C")
+                pdf.cell(146, 10, "Resumen luminancia del observador "+ str(i) + ":", border = False, align="C")
                 pdf.ln(h=8)
                 pdf.set_font("Times", size=10)
                 pdf.create_table(table_data = luminanceNutshellArray[i], cell_width="uneven", x_start="C", align_data = "C", align_header="C")
@@ -155,10 +233,12 @@ class PDFGenerator():
 
 def main():
     test = PDFGenerator()
+    l20 = L20Calculator(maxSpeed = 60, slope = 0.5, fiftyPercentThreshold= False,  cardinalDirection = 0, Hemisphere = 0, 
+                        percentArray = [0.10,0.10,0.10,0.10,0.10,0.20,0.30])
 
     section = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
     array = [section,section,section,section,section]
-    test.exportLuminanceData(sections= array)
+    test.exportData(l20=l20,sections= array)
 
 
 if __name__ == '__main__':

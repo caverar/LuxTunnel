@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox as mb
 import math
+from tkinter.constants import CURRENT
 # pip install pillow
 from PIL import Image, ImageTk
 
@@ -165,7 +166,8 @@ class illuminancePictureFrame(tk.Frame):
         print(event.x)
         print(event.y)
 
-    def reset(self, route="image.jpg", escalate = False):
+    def reset(self, route="L20DefaultImage.jpg", escalate = False):
+        self.route=route
         self.clearALL()
         if self.binder != None:
             self.myCanvas.unbind("<Button-1>",self.binder)
@@ -174,7 +176,10 @@ class illuminancePictureFrame(tk.Frame):
         self.drawImage()
 
     def firsStep(self , newGridCenterOffsetX=0, newGridCenterOffsetY=0, newInteriorCircleRadius=50, SD=100, entranceRadiusMeters = 5):
-        
+        self.clearALL()
+        self.loadImage(self.route,escalate = False)
+        self.drawImage()
+
         # Desactivar seleccion de colores
         if self.binder != None:
             self.myCanvas.unbind("<Button-1>",self.binder)
@@ -197,7 +202,7 @@ class illuminancePictureFrame(tk.Frame):
 
     def secondStep(self, newCircleQuantity = 8, newhalfAngleQuantity=12):
 
-        # Desactivar seleccion de colores
+        # Desactivar selección de colores
         if self.binder != None:
             self.myCanvas.unbind("<Button-1>",self.binder)
             self.binder = None
@@ -328,8 +333,8 @@ class illuminancePictureFrame(tk.Frame):
         else:
             self.currentMaterial = 0
     
-    def fillGrid(self, material=0):
-        # Desactivar seleccion de colores
+    def fillGrid(self):
+        # Desactivar selección de colores
         if self.binder != None:
             self.myCanvas.unbind("<Button-1>",self.binder)
             self.binder = None
@@ -367,9 +372,10 @@ class illuminancePictureFrame(tk.Frame):
                 
                 self.areaIndicators[i][j]=(self.create_circle(xPos, yPos, 5,self.materialColor[self.currentMaterial] ,self.myCanvas))
                
-                self.areaMatrix[i][j] = (self.getArea(i),material)   
+                self.areaMatrix[i][j] = (self.getArea(i), self.currentMaterial)   
 
-    def getTotalAreas(self, percentageArray):
+    def getTotalAreas(self, percentageArray = [0 for i in range(7)]):
+
         partialAreasArray =[0 for i in range(7)]
         
         totalArea = math.pi*pow(self.circleSize,2)
@@ -398,10 +404,11 @@ class illuminancePictureFrame(tk.Frame):
             percentageArray[5] = partialAreasArray[5]/totalArea
             percentageArray[6] = partialAreasArray[6]/totalArea
 
-            
             print("CORRECTO:")
             print(percentageArray)
             print(percentageArray[0]+percentageArray[1]+percentageArray[2]+percentageArray[3]+percentageArray[4]+percentageArray[5]+percentageArray[6])
+
+            return percentageArray
 
     # Funciones auxiliares
     def getArea(self,rRegion):
