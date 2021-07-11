@@ -7,8 +7,8 @@ from PIL import Image, ImageTk
 
 class illuminancePictureFrame(tk.Frame):
 
-    def __init__(self):
-        self.initVariables()             
+    def __init__(self, widowsSizeX = 800, widowsSizeY = 600):
+        self.initVariables(widowsSizeX = widowsSizeX, widowsSizeY = widowsSizeY)             
         self.initUI()
         
     def initSelectionEvents(self):
@@ -17,7 +17,7 @@ class illuminancePictureFrame(tk.Frame):
             self.myCanvas.unbind("<Button-1>",self.binder)
         self.binder= self.myCanvas.bind("<Button-1>",self.markArea)        
         
-    def initVariables(self):
+    def initVariables(self, widowsSizeX = 800, widowsSizeY = 600):
 
         self.binder = None              # Gestor de eventos
 
@@ -32,8 +32,8 @@ class illuminancePictureFrame(tk.Frame):
         # Prados: Verde
         # Tunel: Violeta
 
-        self.widowsSizeX=800
-        self.widowsSizeY=600
+        self.widowsSizeX=widowsSizeX
+        self.widowsSizeY=widowsSizeY
 
         #Offset del centro de la grilla de la imagen
         self.gridCenterOffsetX = 0
@@ -60,17 +60,16 @@ class illuminancePictureFrame(tk.Frame):
         self.renderedTunnelImage = None
 
     def initUI(self):
-        # Canvas para dibujo de circulos
+        # Canvas para dibujo de círculos
 
         self.myCanvas = tk.Canvas(self, width=self.widowsSizeX, height=self.widowsSizeY, borderwidth=0, highlightthickness=0,background="black" )
 
         self.loadImage("L20DefaultImage.jpg",escalate=True)
 
         self.drawImage()
-        self.drawInnerCircle()
-        self.drawCircles()
-        
-        self.drawLines()
+        #self.drawInnerCircle()
+        #self.drawCircles()        
+        #self.drawLines()
         #self.initSelectionEvents()
 
         # Ubicar Canvas
@@ -79,6 +78,7 @@ class illuminancePictureFrame(tk.Frame):
         
     def loadImage(self,route="L20DefaultImage.jpg",escalate=False):
 
+        self.route = route
         # Catch_try TODO
         # Cargar imagen:
         tunnelImage = Image.open(route)
@@ -166,19 +166,18 @@ class illuminancePictureFrame(tk.Frame):
         print(event.x)
         print(event.y)
 
-    def reset(self, route="L20DefaultImage.jpg", escalate = False):
-        self.route=route
+    def reset(self, escalate = False):
         self.clearALL()
         if self.binder != None:
             self.myCanvas.unbind("<Button-1>",self.binder)
             self.binder = None
-        self.loadImage(route,escalate = escalate)
+        self.loadImage(self.route,escalate = escalate)
         self.drawImage()
 
     def firsStep(self , newGridCenterOffsetX=0, newGridCenterOffsetY=0, newInteriorCircleRadius=50, SD=100, entranceRadiusMeters = 5):
-        self.clearALL()
-        self.loadImage(self.route,escalate = False)
-        self.drawImage()
+        #self.clearALL()
+        #self.loadImage(self.route,escalate = False)
+        #self.drawImage()
 
         # Desactivar seleccion de colores
         if self.binder != None:
