@@ -86,25 +86,31 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
     def actualizarBinder(self):
         if self.grilla.binder != None:
             self.grilla.myCanvas.unbind("<Button-1>",self.grilla.binder)
-        self.grilla.binder= self.grilla.myCanvas.bind("<Button-1>",self.grilla.markArea) 
+        self.grilla.binder= self.grilla.myCanvas.bind("<Button-1>",self.grilla.markArea)
+
     def cambiarColorCielo(self):
         self.actualizarBinder()
         self.grilla.currentMaterial=0
     def cambiarColorCalzada(self):
         self.actualizarBinder()
         self.grilla.currentMaterial=1
-    def cambiarColorPrados(self):
+
+    def cambiarColorRocas(self):
         self.actualizarBinder()
         self.grilla.currentMaterial=2
+
     def cambiarColorEdificios(self):
         self.actualizarBinder()
         self.grilla.currentMaterial=3
+
     def cambiarColorNieve(self):
         self.actualizarBinder()
         self.grilla.currentMaterial=4
-    def cambiarColorRocas(self):
+
+    def cambiarColorPrados(self):
         self.actualizarBinder()
         self.grilla.currentMaterial=5
+
     def cambiarColorTunel(self):
         self.actualizarBinder()
         self.grilla.currentMaterial=6
@@ -119,10 +125,13 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
     def getDayLight(self):
         mat=[[False for i in range(5)] for i in range(5)]
-        mat[0][0]=(self.tamañoTuneOpcion1Value.get())
-        mat[0][1]=(self.tamañoTuneOpcion2Value.get())
-        mat[0][2]=(self.tamañoTuneOpcion3Value.get())
-        mat[0][3]=(self.tamañoTuneOpcion4Value.get())
+
+        mat[0][0]=(self.tamañoTunelOpcion1Value.get())
+        mat[0][1]=(self.tamañoTunelOpcion2Value.get())
+        mat[0][2]=(self.tamañoTunelOpcion3Value.get())
+        mat[0][3]=(self.tamañoTunelOpcion4Value.get())
+
+
 
         mat[1][0]=(self.salidaVisibleOpcion1Value.get())
         mat[1][1]=(self.salidaVisibleOpcion2Value.get())
@@ -134,34 +143,35 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         mat[3][1]=(self.reflectanciaParedOpcion2Value.get())
 
         mat[4][0]=(self.traficoOpcion1Value.get())
-        mat[4][1]=(self.traficoOpcion1Value.get())
-        message="Configuración Invalida"
-        if mat[0][0] or  (mat[0][1] and mat[1][0] and mat[4][0]) or (mat[0][1] and mat[1][1] and mat[2][0] and mat[3][0] and mat[4][0]):
-            message="No se requiere diseñar la iluminación diurna."
-        elif (mat[0][1] and mat[0][0] and mat[4][1]) or (mat[0][1] and mat[1][1] and mat[2][0] and mat[3][1]) or (mat[0][1] and mat[1][1] and mat[2][1]) or (mat[0][2] and mat[1][0] and mat[4][0]):
-            message="Se requiere iluminación diurna cumpliendo el requerimiento del 50% de la luminancia de la zona limite."
-        elif mat[0][3] or (mat[0][2] and ( (mat[1][0] and mat[4][1]) or (mat[1][1] and (mat[2][1] or (mat[2][0] and mat[3][1]))))):
-            message="Se requiere iluminación diurna cumpliendo el requerimiento del 100% de la luminancia de la zona limite."
+        mat[4][1]=(self.traficoOpcion2Value.get())
+
+
+        message = "Configuración invalida no definida en la norma CIE 88"
+
         for i in range(5):
             if mat[i].count(True)>1:
-                message="Configuración Invalida"
-        mb.showinfo(title="DayLight",message=message)
+                message="Atencion! Seleccione solo una casilla por opción"
+        
+        if(message!="Atencion! Seleccione solo una casilla por opción"):
+
+            if mat[0][0] or (mat[0][1] and mat[1][0] and mat[4][0]) or (mat[0][1] and mat[1][1] and mat[2][0] and mat[3][0] and mat[4][0]):
+                message="No se requiere diseñar la iluminación diurna."
+            elif (mat[0][1] and mat[0][0] and mat[4][1]) or (mat[0][1] and mat[1][1] and mat[2][0] and mat[3][1]) or (mat[0][1] and mat[1][1] and mat[2][1]) or (mat[0][2] and mat[1][0] and mat[4][0]) or (mat[0][2] and mat[1][1] and mat[2][0] and mat[3][0] and mat[4][0]):
+                message="Se requiere iluminación diurna cumpliendo el requerimiento del 50% de la luminancia de la zona limite."
+            elif mat[0][3] or (mat[0][2] and ( (mat[1][0] and mat[4][1]) or (mat[1][1] and (mat[2][1] or (mat[2][0] and mat[3][1]))))):
+                message="Se requiere iluminación diurna cumpliendo el requerimiento del 100% de la luminancia de la zona limite."
+
+
+        mb.showinfo(title="Requerimientos para el de iluminación de dia",message=message)
         return message
 
     def getDataPhoto(self):
-        arr=self.grilla.getTotalAreas()
-        newArr=[0 for i in range(7)]
-        newArr[0]=arr[0]
-        newArr[1]=arr[1]
-        newArr[2]=arr[5]
-        newArr[3]=arr[4]
-        newArr[4]=arr[2]
-        newArr[5]=arr[6]
-        names=["Cielo","Calzada","Rocas","Nieve","Prados","Túnel"]
+        areasPercentageArray=self.grilla.getTotalAreas()
+        names=["Cielo","Calzada","Rocas", "Edificios", "Nieve", "Vegetacion","Túnel"]
         message=""
-        for i in range(6):
-            message+= str(round(newArr[i],1))+"% de "+names[i]
-            if i<5:
+        for i in range(7):
+            message+= str(round(areasPercentageArray[i]*100,1))+"% de "+names[i]
+            if i<6:
                 message+=", "
         mb.showinfo(title="Porcentaje Materiales",message=message)
     def createEntry(self,name,x1,y1,id,width1=150,height1=89,default=0.0):
@@ -172,12 +182,36 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         globals()[name].place(width=width1,height=height1,x=x1,y=y1)
         setattr(self,name,globals()[name])
         self.widgets[id].append(getattr(self,name))
-    def createCheck(self,name,x1,y1,id,condition,width1=10,height1=2,text="check"):
+
+    def createCheck(self,name,x1,y1,id,condition,width1=10,height1=2,text="check", checkType = 0):
+        
+        def checkCallBackBinary():            
+            checkBoxNumber = name[len(name)-1]
+            rootName = name[0:len(name)-1]            
+            globals()[rootName+"1"].deselect()
+            globals()[rootName+"2"].deselect()
+            globals()[rootName+str(checkBoxNumber)].select()
+
+        def checkCallBackMultiple():
+            checkBoxNumber = name[len(name)-1]
+            rootName = name[0:len(name)-1]            
+            globals()[rootName+"1"].deselect()
+            globals()[rootName+"2"].deselect()
+            globals()[rootName+"3"].deselect()
+            globals()[rootName+"4"].deselect()
+            globals()[rootName+str(checkBoxNumber)].select()
+
         setattr(self,name+"Value",BooleanVar())
-        globals()[name]=Checkbutton(self.master, text =condition, variable = getattr(self,name+"Value"),onvalue = True, offvalue = False, height=height1, width = width1,bg='#90AFC5')
+
+        if(checkType == 0):
+            globals()[name]=Checkbutton(self.master, text =condition, variable = getattr(self,name+"Value"),onvalue = True, offvalue = False, height=height1, width = width1,bg='#90AFC5', command=checkCallBackBinary)
+        else:
+            globals()[name]=Checkbutton(self.master, text =condition, variable = getattr(self,name+"Value"),onvalue = True, offvalue = False, height=height1, width = width1,bg='#90AFC5', command=checkCallBackMultiple)
+      
         globals()[name].place(x=x1,y=y1)
         setattr(self,name,globals()[name])
         self.widgets[id].append(getattr(self,name))
+
     def createLabel(self,name,x1,y1,id,width1=150,height1=89,label="jk"):
         color= '#336B87'
         globals()[name]=Label(self.master, text=label,width=width1,height=height1,bg=color,fg='white')
@@ -202,10 +236,11 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         epsy=80
         
         self.createLabel("tamañoTunel",240,130,id,20,3,label="1. Tamaño del túnel:")
-        self.createCheck("tamañoTuneOpcion1",480,135,id,"<25m")
-        self.createCheck("tamañoTuneOpcion2",480+epsx,135,id,"25m-75m")
-        self.createCheck("tamañoTuneOpcion3",480+epsx*2,135,id,"75m-125m")
-        self.createCheck("tamañoTuneOpcion4",480+epsx*3,135,id,">125m")
+        self
+        self.createCheck("tamañoTunelOpcion1",480,135,id,"<25m", checkType = 1)
+        self.createCheck("tamañoTunelOpcion2",480+epsx,135,id,"25m-75m", checkType = 1)
+        self.createCheck("tamañoTunelOpcion3",480+epsx*2,135,id,"75m-125m", checkType = 1)
+        self.createCheck("tamañoTunelOpcion4",480+epsx*3,135,id,">125m", checkType = 1)
 
  
         self.createLabel("salidaVisible",240,130+epsy,id,20,3,label="2. Salida visible desde\ndistancia de parada:")
@@ -226,7 +261,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
         
 
-        self.createButton("Generar informe de luz del dia",725,570,id,24,3,command="getDayLight")
+        self.createButton("Evaluar configuración",725,570,id,24,3,command="getDayLight")
     
     def distanciaParada(self):
         color= '#336B87'.upper() #Color azúl de botón
@@ -307,7 +342,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.grilla.grid( row = 0, column = 0,rowspan = 3, columnspan = 6, sticky = tk.W+tk.E+tk.N+tk.S)
         self.grilla.place(x=240,y=160)
         self.widgets[1].append(self.grilla)
-        array = [0,0,0,0,0,0,0]
+        areasPercentageArray = [0 for i in range(7)]
         self.ruta_foto =Label(master, text="Ruta foto:",width=20,height=2,bg=color,fg='white') 
         self.ruta_foto.place(x=240,y=60)
         self.widgets[1].append(self.ruta_foto )
@@ -421,19 +456,20 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
 
         self.nieve= Button(master, text="Nieve",width=10,height=1,background=color,command=self.cambiarColorNieve, fg='white')
-        self.nieve.place(x=850+100+100+100,y=y1)
+        self.nieve.place(x=850,y=y1+40)
         self.widgets[1].append(self.nieve)
 
-        self.prados= Button(master, text="Prados",width=10,height=1,background=color,command=self.cambiarColorPrados, fg='white')
-        self.prados.place(x=850,y=y1+40)
+        self.prados= Button(master, text="Vegetación",width=10,height=1,background=color,command=self.cambiarColorPrados, fg='white')
+        self.prados.place(x=850+100,y=y1+40)
         self.widgets[1].append(self.prados)
         
         self.tunel = Button(master, text="Túnel",width=10,height=1,background=color,command=self.cambiarColorTunel, fg='white')
-        self.tunel.place(x=850+100,y=y1+40)
+        self.tunel.place(x=850+100+100,y=y1+40)
         self.widgets[1].append(self.tunel)
 
+
         self.edificios= Button(master, text="Edificaciones",width=10,height=1,background=color,command=self.cambiarColorEdificios, fg='white')
-        self.edificios.place(x=850+100+100,y=y1+40)
+        self.edificios.place(x=850+100+100+100,y=y1)
         self.widgets[1].append(self.edificios)
 
 

@@ -29,8 +29,8 @@ class illuminancePictureFrame(tk.Frame):
         # Rocas: naranja
         # Edificios: Amarillo
         # Nieve: Blanco
-        # Prados: Verde
-        # Tunel: Violeta
+        # Vegetacion: Verde
+        # Túnel: Violeta
 
         self.widowsSizeX=widowsSizeX
         self.widowsSizeY=widowsSizeY
