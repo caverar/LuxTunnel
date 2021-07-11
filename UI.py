@@ -277,7 +277,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.widgets[0].append(self.vMax)
         self.label_frameVelocidad = Frame(width=80,height=89,bg=color)
         self.label_frameVelocidad.pack_propagate(0)
-        self.kms=Label(self.label_frameVelocidad, font=('Verdana',17),text="Km/s",bg=color,fg='white',anchor="center")
+        self.kms=Label(self.label_frameVelocidad, font=('Verdana',17),text="Km/h",bg=color,fg='white',anchor="center")
         self.kms.place(x=3,y=27)
         self.label_frameVelocidad.place(x=580,y=60)
         self.widgets[0].append(self.label_frameVelocidad)
