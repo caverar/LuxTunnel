@@ -114,7 +114,7 @@ class PDFGenerator():
             
             # illuminanceMatrix
             illuminanceDataArray = [["" for i in range(3*section.roadLanes+1)] for j in range(section.N+1) ]
-            illuminanceDataArray[0][0] = "C/Gamma?"
+            illuminanceDataArray[0][0] = "x/y"
 
             for i in range(len(illuminanceDataArray[0])-1):
                 illuminanceDataArray[0][i+1] = str(section.StepGamma*i) + " m"
@@ -122,12 +122,12 @@ class PDFGenerator():
                 illuminanceDataArray[i+1][0] = str(section.StepC*i) + " m"
             for i in range(section.N):
                 for j in range(3*section.roadLanes):
-                    illuminanceDataArray[i+1][j+1] =  "{:.4f}".format(section.Illuminance[i][j]) + " lx?"
+                    illuminanceDataArray[i+1][j+1] =  "{:.4f}".format(section.Illuminance[i][j]) + " lx"
 
             # illuminance nutshell
             illuminanceNutshellArray = [
                 ["Iluminancia maxima", "Iluminancia promedio", "Iluminancia minima", "Factor g1", "Factor g2", "Factor g3" ], 
-                ["{:.4f}".format(section.Emax)+" lx?","{:.4f}".format(section.Eav)+" lx?", "{:.4f}".format(section.Emin)+" lx?", "{:.4f}".format(section.g1), "{:.4f}".format(section.g2), "{:.4f}".format(section.g3)]
+                ["{:.4f}".format(section.Emax)+" lx","{:.4f}".format(section.Eav)+" lx", "{:.4f}".format(section.Emin)+" lx", "{:.4f}".format(section.g1), "{:.4f}".format(section.g2), "{:.4f}".format(section.g3)]
             ]
 
             # Luminance
@@ -156,7 +156,7 @@ class PDFGenerator():
             for i in range(section.roadLanes):
                 luminanceNutshellArray[i]=[
                     ["Luminancia maxima", "Luminancia promedio", "Luminancia minima"],
-                    ["{:.4f}".format(section.Lmax[i])+" lx?","{:.4f}".format(section.Lav[i])+" lx?", "{:.4f}".format(section.Lmin[i])]
+                    ["{:.4f}".format(section.Lmax[i])+" cd/m2","{:.4f}".format(section.Lav[i])+" cd/m2", "{:.4f}".format(section.Lmin[i])+ " cd/m2"]
                 ] 
                 
             
@@ -175,7 +175,7 @@ class PDFGenerator():
 
             pdf.set_font("Times", size=10)
             pdf.create_table(table_data = inputDataArray, cell_width="uneven", x_start=20)
-            pdf.image("distributionImages/"+str(section.luminariesDistribution)+".jpg", pdf.x + 120, pdf.y - 60, 50)
+            pdf.image("distributionImages/"+str(section.luminariesDistribution)+".jpg", pdf.x + 110, pdf.y - 65, 70)
             pdf.ln()
 
             # Road
@@ -236,8 +236,12 @@ def main():
     l20 = L20Calculator(maxSpeed = 60, slope = 0.5, fiftyPercentThreshold= False,  cardinalDirection = 0, Hemisphere = 0, 
                         percentArray = [0.10,0.10,0.10,0.10,0.10,0.20,0.30])
 
-    section = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
-    array = [section,section,section,section,section]
+    section1 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 0, Fm= 0.8)
+    section2 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 1, Fm= 0.8)
+    section3 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 2, Fm= 0.8)
+    section4 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
+
+    array = [section1,section1,section2,section3,section4]
     test.exportData(l20=l20,sections= array)
 
 
