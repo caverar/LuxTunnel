@@ -4,7 +4,7 @@ class PDF(FPDF):
     # Header
     def header(self):
 
-        self.image("logo.jpg", 15, 11, 20)
+        self.image("logo.png", 15, 9.5, 20)
         self.set_font("Times", "BI", 12)
         self.ln(h=4)
         self.cell(25)
