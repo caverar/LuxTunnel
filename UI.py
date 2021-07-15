@@ -4,13 +4,14 @@ import tkinter as tk
 from tkinter import *
 from tkinter import messagebox as mb
 from tkinter import filedialog
+from tkinter import ttk
 import math
 from PIL import Image, ImageTk
 from illuminancePictureFrame import illuminancePictureFrame
 class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
     def __init__(self,master):
-        self.widgets=[[],[],[],[],[]]
+        self.widgets=[[],[],[],[],[],[]]
         self.menushow(master)
         self.last=-1
         self.recreado=[False for i in range(len(self.widgets))]
@@ -21,20 +22,26 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
             for j in self.widgets[self.last]:
                 j.place_forget()
         self.last=id
-
-        
-        self.distanciaDeParada = Button(self.master, text="Distancia De\nParada",width=12,height=3,command=lambda:self.recrear(0))
-        self.distanciaDeParada.place(x=40,y=85+75)
-        self.foto = Button(self.master, text="Areas Portal",width=12,height=3,command=lambda:self.recrear(1))
-        self.foto.place(x=40,y=160+75)    
-        self.l20 = Button(self.master, text="L20",width=12,height=3,command=lambda: self.recrear(2))
-        self.l20.place(x=40,y=160+75*2)
-        self.l20 = Button(self.master, text="L20",width=12,height=3,command=lambda: self.recrear(2))
-        self.distribucionLuminarias = Button(self.master, text="Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(3))
-        self.distribucionLuminarias.place(x=40,y=385+75)
         
         self.dayLight = Button(self.master, text="Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4))
         self.dayLight.place(x=40,y=85)
+        
+        self.distanciaDeParada = Button(self.master, text="Distancia De\nParada",width=12,height=3,command=lambda:self.recrear(0))
+        self.distanciaDeParada.place(x=40,y=85+75)
+        
+        self.foto = Button(self.master, text="Areas Portal",width=12,height=3,command=lambda:self.recrear(1))
+        self.foto.place(x=40,y=160+75)    
+
+        self.l20 = Button(self.master, text="L20",width=12,height=3,command=lambda: self.recrear(2))
+        self.l20.place(x=40,y=160+75*2)
+
+        self.configuraciónSecciones = Button(self.master, text="Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3))
+        self.configuraciónSecciones.place(x=40,y=385+75)
+
+        self.distribucionLuminarias = Button(self.master, text="Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5))
+        self.distribucionLuminarias.place(x=40,y=385+75*2)
+
+
 
         if id==0:
             self.distanciaDeParada = Button(self.master, text="Distancia De\nParada",width=12,height=3,bg='#336B87',command=lambda:self.recrear(0))
@@ -46,13 +53,17 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
             self.l20 = Button(self.master, text="L20",width=12,bg='#336B87',height=3,command=lambda: self.recrear(2))
             self.l20.place(x=40,y=160+75*2)
 
-        elif id==3:
-            self.distribucionLuminarias = Button(self.master, text="Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(3),bg='#336B87')
-            self.distribucionLuminarias.place(x=40,y=385+75)
+        elif id==5:
+            self.distribucionLuminarias = Button(self.master, text="Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5),bg='#336B87')
+            self.distribucionLuminarias.place(x=40,y=385+75*2)
         
         elif id==4:
             self.dayLight = Button(self.master, text="Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4),bg='#336B87')
             self.dayLight.place(x=40,y=85)
+        elif id==3:
+            self.configuraciónSecciones = Button(self.master, text="Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3),bg='#336B87')
+            self.configuraciónSecciones.place(x=40,y=385+75)
+
         if self.recreado[id]==False:
             self.recreado[id]=True
             if id==0:
@@ -61,10 +72,12 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                 self.vistafoto()
             elif id==2:
                 self.l20_peque()
-            elif id==3:
+            elif id==5:
                 self.distribucionDeLuminarias()
-            else:
+            elif id ==4:
                 self.viewDayLight()
+            elif id==3:
+                self.configuracionDeLuminarias()
             return 
         for i in self.widgets[id]:
             i.place(width=i.winfo_width(),height=i.winfo_height(),x=i.winfo_rootx()-self.master.winfo_rootx(),y=i.winfo_rooty()-self.master.winfo_rooty())
@@ -224,6 +237,24 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         globals()[name].place(x=x1,y=y1)
         setattr(self,name,globals()[name])
         self.widgets[id].append(getattr(self,name))
+    def createPhoto(self,name,ruta,id,width,height,x,y):
+        
+        globals()["img"+name]=Image.open(ruta)
+        globals()["img"+name]=globals()["img"+name].resize((width, height))
+        setattr(self,"img"+name,globals()["img"+name])
+        globals()["imagen"+name]=ImageTk.PhotoImage(getattr(self,"img"+name))
+        setattr(self,"imagen"+name,globals()["imagen"+name])
+        globals()[name] =Label(self.master,image=getattr(self,"imagen"+name))
+        globals()[name].place(x=x,y=y)
+        setattr(self,name,globals()[name])
+        self.widgets[id].append(getattr(self,name))
+    def createSelector(self,name,values,id,x,y,width,height):
+        globals()[name] =ttk.Combobox(self.master,width=width,height=height)
+        globals()[name].place(x=x, y=y)
+        globals()[name]["values"] = values
+        globals()[name].set(values[0])
+        setattr(self,name,globals()[name])
+        self.widgets[id].append(getattr(self,name)) 
     def viewDayLight(self):
         id=4
         """
@@ -564,7 +595,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.lth.place(width=180,height=50,x=360,y=70+corrimiento*5)
         self.widgets[2].append(self.lth)
 
-    def distribucionDeLuminarias(self):
+    def configuracionDeLuminarias(self):
         color= '#336B87'.upper() #Color azúl de botón
         color1= '#336B87'.upper() #Color azúl de botón
         over="#763626"
@@ -594,22 +625,14 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.fotometria.place(x=250,y=50+corrimiento*5)
         self.widgets[3].append(self.fotometria)
 
-        self.rotacionLuminaria =Label(master, text="Rotacion de\n luminaria",width=14,height=3,bg=color,fg='white')
-        self.rotacionLuminaria.place(x=250,y=50+corrimiento*6)
-        self.widgets[3].append(self.rotacionLuminaria)
-        
-        self.factorMantenimiento =Label(master, text="Factor de\n mantenimiento",width=14,height=3,bg=color,fg='white')
-        self.factorMantenimiento.place(x=250,y=50+corrimiento*7)
-        self.widgets[3].append(self.factorMantenimiento)
+
         corrimiento2=130
         numeroSecciones=5
-
-
         for i in range(numeroSecciones):
             self.seccion1 =Label(master, text="Sección "+str(i+1),width=14,height=3,bg=color,fg='white')
             self.seccion1.place(x=270+corrimiento2*(i+1),y=50)
             self.widgets[3].append(self.seccion1)
-        for i in range(7):
+        for i in range(5):
             for j in range(numeroSecciones):
                 self.entry1 = Entry(font=('Verdana',15),justify='center')
                 if i!=4:
@@ -620,7 +643,46 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                 self.widgets[3].append(self.entry1)
                 if i==6:
                     break
+        self.createLabel("factorDeMantenimiento",250,440,3,17,3,label="Factor de \n mantenimiento")
+        self.createEntry("factorDeMantenimientoEntry",250,495,3,width1=140,height1=60,default=0.5)
+        self.createPhoto("photoSeccionTunel","secciones.png",3,500,200,500,440)
+    def distribucionDeLuminarias(self):
 
+        id=5
+
+        self.createLabel("SeccionDeTuneles",250,50,id,14,3,label="Sección del\n Tunel")
+
+        self.createLabel("imagen angulo rotacion",1100,50,id,24,3,label="Angulo de rotación\nluminaria")
+
+        self.createPhoto("imagen angulo Rot","angulo.png",id,193,220,1100,120)
+
+        corrimiento=73
+
+        self.createLabel("Angulo de rotaciónluminaria(grados)",250,50+corrimiento,id,14,4,label="Angulo de \nrotación\nluminaria")
+
+        self.createLabel("distribucion de las luminarias",250,50+corrimiento*2,id,14,4,label="Distribución de\nluminarias\n(0,1,2,3)")
+
+        self.createLabel("saliente calzada",250,50+corrimiento*3,id,14,4,label="Saliente sobre\nla calzada en\nmetros(h)")
+
+        corrimiento2=130
+        numeroSecciones=5
+        for i in range(numeroSecciones):
+            self.createLabel("Seccion2"+str(i),270+corrimiento2*(i+1),50,id,14,3,label="Sección "+str(i+1))
+
+        for i in range(3):
+            for j in range(numeroSecciones):
+                if i!=1:
+                    self.createEntry("seccion2"+str(i)+str(j),270+corrimiento2*(j+1)+7,60+corrimiento*(i+1)-5,id,width1=100,height1=60,default=0.0)
+                else:
+                    self.createSelector("selectorDsitribucion"+str(i)+str(j),["Distribución 0","Distribución 1","Distribución 2","Distribución 3"],id,270+corrimiento2*(j+1),60+corrimiento*(i+1)+13,12,8)
+        corrimiento=280
+        for i in range(4):
+            self.createLabel("distribucionLuminaria"+str(i),250+corrimiento*i,370,id,24,3,label="Distribución de luminarias "+str(i))
+            self.createPhoto("distribucionLuminariaFoto"+str(i),"distribucion"+str(i)+".png",id,193,150,250+corrimiento*i,370+60)
+
+        self.createButton("Ejecutar cálculos",675,605,id,20,2,command="getDataPhoto")
+
+ 
 def main():
     root = Tk()
     v=Ventana(root)
