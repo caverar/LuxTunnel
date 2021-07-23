@@ -10,6 +10,7 @@ from PIL import Image, ImageTk
 from illuminancePictureFrame import illuminancePictureFrame
 from LuminanceCalculator import LuminanceCalculator
 from L20Calculator import L20Calculator
+from PDFGenerator import PDFGenerator
 class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
     def __init__(self,master):
@@ -18,6 +19,8 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.last=-1
         self.recreado=[False for i in range(len(self.widgets))]
         self.recrear(4)
+        self.gridFileName="L20DefaultImage.jpg"
+
 
     def recrear(self,id):
         if self.last!=-1:
@@ -132,6 +135,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.grilla.drawImage()
         self.rutaFoto1.delete(0, 'end')
         self.rutaFoto1.insert(END,filename)
+        self.gridFileName=filename
     def cargarFotometria(self,name):
         print("Cargar Fotometria ", name)
         filename = filedialog.askopenfilename(initialdir = "Fotometrias",title = "Select a File")
@@ -609,12 +613,15 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
             luminancias.append(LuminanceCalculator(IESroute=secciones[i][0], luminairesHeight = secciones[i][1], luminairesBetweenDistance = secciones[i][2],
                                                    roadWidth = secciones[i][3],
                                    roadLanes=int(secciones[i][4]), luminairesRotation = secciones[i][5], luminariesOverhang = secciones[i][6],
-                                                   luminariesDistribution = secciones[i][7],
+                                                   luminariesDistribution = int(secciones[i][7]),
                                                    Fm= fm))
             #luminancias[-1].printFinalData()
         
-        
-        
+        test = PDFGenerator()
+        route="LuminanceData"
+        test.exportData(route=route, luminanceTunnelEntranceImageRoute=self.gridFileName,l20=self.l20Resultados,sections= luminancias)
+        mb.showinfo(title="Resultados Generados",message="Atención, cálculo satisfactorio, se ha generado un informe de resultados en la ruta : "+route)
+
     def distribucionDeLuminarias(self):
 
         id=5
@@ -680,7 +687,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         montañoso["Si"]=True
         montañoso["No"]=False
        
-        l20 = L20Calculator(maxSpeed = float(self.vMax.get()), slope = float(self.inclinacionCarretera.get()), fiftyPercentThreshold= False,
+        self.l20Resultados = L20Calculator(maxSpeed = float(self.vMax.get()), slope = float(self.inclinacionCarretera.get()), fiftyPercentThreshold= False,
                             MountainousTerrain=montañoso[self.esMontañoso.get()],
                             cardinalDirection = direction[self.orientacionTunel.get()], Hemisphere = hemisferio[self.hemisferio.get()],
                             Lc = float(self.lc.get()), Lr = float(self.lr.get()), LeRocks = float(self.ler.get()), LeBuildings = float(self.leb.get()),
@@ -688,10 +695,11 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                             percentArray = self.grilla.getTotalAreas())
         #l20.printData()
         unidades="cd/m2"
-        out=("Luminancias: Lc: " + str(l20.Lc)+unidades  +", LeRocks: "
-             + str(l20.LeRocks)+unidades  + ", LeBuildings: " + str(l20.LeBuildings) +unidades +
-             ", LeSnow: " + str(l20.LeSnow) +unidades + ", LeMeadows: " + str(l20.LeMeadows) +unidades + ", Lr: " + str(l20.Lr)+unidades 
-             +", Lth: "+ str(round(l20.Lth,3))+unidades )
+        out=("Luminancias: Lc: " + str(self.l20Resultados.Lc)+unidades  +", LeRocks: "
+             + str(self.l20Resultados.LeRocks)+unidades  + ", LeBuildings: " + str(self.l20Resultados.LeBuildings) +unidades +
+             ", LeSnow: " + str(self.l20Resultados.LeSnow) +unidades + ", LeMeadows: " + str(self.l20Resultados.LeMeadows) +unidades + ", Lr: " +
+             str(self.l20Resultados.Lr)+unidades 
+             +", Lth: "+ str(round(self.l20Resultados.Lth,3))+unidades )
         mb.showinfo(title="Calculo L20",message=out)
 
 
