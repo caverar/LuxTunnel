@@ -585,7 +585,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
        
         self.createLabel("factorDeMantenimiento",250,440,3,17,3,label="Factor de \n mantenimiento")
         self.createEntry("factorDeMantenimientoEntry",250,495,3,width1=140,height1=60,default=0.8)
-        self.createPhoto("photoSeccionTunel","secciones.png",3,500,200,500,440)
+        self.createPhoto("photoSeccionTunel","secciones.jpeg",3,500,200,500,440)
     def luminanciaTunel(self):
  
         print("distribucionLuminarias")
@@ -606,8 +606,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                 else:
                     secciones[i].append(int(getattr(self,"seccion2"+str(i)+str(j)).get()[-1]))
         fm=float(self.factorDeMantenimientoEntry.get())
-        for i in secciones:
-            print("tamaño",len(i))
+
         luminancias=[]
         for i in range(numeroSecciones):
             luminancias.append(LuminanceCalculator(IESroute=secciones[i][0], luminairesHeight = secciones[i][1], luminairesBetweenDistance = secciones[i][2],
@@ -615,12 +614,12 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                                    roadLanes=int(secciones[i][4]), luminairesRotation = secciones[i][5], luminariesOverhang = secciones[i][6],
                                                    luminariesDistribution = int(secciones[i][7]),
                                                    Fm= fm))
-            #luminancias[-1].printFinalData()
-        
+
         test = PDFGenerator()
-        route="LuminanceData"
-        test.exportData(route=route, luminanceTunnelEntranceImageRoute=self.gridFileName,l20=self.l20Resultados,sections= luminancias)
-        mb.showinfo(title="Resultados Generados",message="Atención, cálculo satisfactorio, se ha generado un informe de resultados en la ruta : "+route)
+        self.routePdf=filedialog.asksaveasfile(title = "Guardar pdf de resultados como :").name
+
+        test.exportData(route=self.routePdf, luminanceTunnelEntranceImageRoute=self.gridFileName,l20=self.l20Resultados,sections= luminancias)
+        mb.showinfo(title="Resultados Generados",message="Atención, cálculo satisfactorio, se ha generado un informe de resultados en la ruta: "+self.routePdf)
 
     def distribucionDeLuminarias(self):
 
@@ -657,8 +656,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         corrimiento=280
         for i in range(4):
             self.createLabel("distribucionLuminaria"+str(i),250+corrimiento*i,370,id,24,3,label="Distribución de luminarias "+str(i))
-            self.createPhoto("distribucionLuminariaFoto"+str(i),"distribucion"+str(i)+".png",id,193,150,250+corrimiento*i,370+60)
-        #self.createButton("Ejecutar cálculos",675,605,id,20,2,command="parametrosCalculo")
+            self.createPhoto("distribucionLuminariaFoto"+str(i),"distributionImages/"+str(i)+".jpg",id,193,150,250+corrimiento*i,370+60)
 
         self.createButton("Ejecutar cálculos",675,605,id,20,2,command="luminanciaTunel")
 
@@ -695,6 +693,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                             percentArray = self.grilla.getTotalAreas())
         #l20.printData()
         unidades="cd/m2"
+
         out=("Luminancias: Lc: " + str(self.l20Resultados.Lc)+unidades  +", LeRocks: "
              + str(self.l20Resultados.LeRocks)+unidades  + ", LeBuildings: " + str(self.l20Resultados.LeBuildings) +unidades +
              ", LeSnow: " + str(self.l20Resultados.LeSnow) +unidades + ", LeMeadows: " + str(self.l20Resultados.LeMeadows) +unidades + ", Lr: " +
@@ -704,10 +703,9 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
 
               
-def main():
-    root = Tk()
-    v=Ventana(root)
-    root.mainloop()
+root = Tk()
+v=Ventana(root)
+root.mainloop()
 
 
 if __name__ == '__main__':
