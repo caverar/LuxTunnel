@@ -126,7 +126,7 @@ class illuminancePictureFrame(tk.Frame):
 
         for i in range(self.circleQuantity-1):
             if(self.circles[i+1] != None):
-                print(i)
+                #print(i)
                 self.myCanvas.delete(self.circles[i+1])
             self.circles[i+1]=self.create_circle(self.widowsSizeX/2 + self.gridCenterOffsetX, self.widowsSizeY/2 + self.gridCenterOffsetY,self.circlesRadiusArray[i+1], "white",self.myCanvas)
                
@@ -259,14 +259,14 @@ class illuminancePictureFrame(tk.Frame):
             #Region del radio
             rRegion=0
             for i in range(self.circleQuantity):
-                print(self.circlesRadiusArray[self.circleQuantity-i-1])
+                #print(self.circlesRadiusArray[self.circleQuantity-i-1])
                 if(R<self.circlesRadiusArray[self.circleQuantity-i-1]):
                     rRegion=self.circleQuantity-i-1                
 
             # Calculo de coordenada de la figura
-            print("---------------")
-            print("ThetaRegion: " +str(ThetaRegion))
-            print("rRegion: " +str(rRegion))
+            #print("---------------")
+            #print("ThetaRegion: " +str(ThetaRegion))
+            #print("rRegion: " +str(rRegion))
 
             ThetaPos=0
             RPos=0
@@ -280,15 +280,15 @@ class illuminancePictureFrame(tk.Frame):
             else:
                 RPos=((self.circlesRadiusArray[rRegion]-self.circlesRadiusArray[rRegion-1])/2) +self.circlesRadiusArray[rRegion-1]
 
-            print("ThetaPos: " +str(ThetaPos))
-            print("RPos: " + str(RPos))
+            #print("ThetaPos: " +str(ThetaPos))
+            #print("RPos: " + str(RPos))
 
             # conversion coordenadas polares a cartesianas
             xPos = (RPos * math.cos(ThetaPos)) + self.widowsSizeX/2 + self.gridCenterOffsetX
             yPos = -(RPos * math.sin(ThetaPos)) + self.widowsSizeY/2 + self.gridCenterOffsetY
             
             # Dibujar figura
-            print("tamaño: " + str(len(self.areaIndicators)))  
+            #print("tamaño: " + str(len(self.areaIndicators)))  
             
             
 
@@ -360,8 +360,8 @@ class illuminancePictureFrame(tk.Frame):
                 else:
                     RPos=((self.circlesRadiusArray[i]-self.circlesRadiusArray[i-1])/2) +self.circlesRadiusArray[i-1]
 
-                print("ThetaPos: " +str(ThetaPos))
-                print("RPos: " + str(RPos))
+                #print("ThetaPos: " +str(ThetaPos))
+                #print("RPos: " + str(RPos))
 
                 # conversion coordenadas polares a cartesianas
                 xPos = (RPos * math.cos(ThetaPos)) + self.widowsSizeX/2 + self.gridCenterOffsetX
@@ -416,7 +416,7 @@ class illuminancePictureFrame(tk.Frame):
             area = pow(self.circlesRadiusArray[0],2)*((math.pi/self.halfAngleQuantity)/2)
         else:
             area = (pow(self.circlesRadiusArray[rRegion],2)-pow(self.circlesRadiusArray[rRegion-1],2))*((math.pi/self.halfAngleQuantity)/2)
-        print("Area: " + str(area))
+        #print("Area: " + str(area))
         return area
 
     def create_circle(self,x, y, r, color, canvasName): #center coordinates, radius

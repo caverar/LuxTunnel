@@ -21,14 +21,22 @@ class LuminanceCalculator():
         self.roadLanes = roadLanes                                                              # 3 max                    
         self.luminairesRotation = -luminairesRotation                                           # Degrees       
 
+        self.getMeshPoints()
+        self.getGammaCCoordinates()
+        self.loadIES(loadFile = True, route = IESroute, rotationAngle = luminairesRotation)    
+        self.getStepGammaCeL()
+        self.illuminanceStep()                
+        self.observerBetaStep()
+        self.luminanceStep()      
 
         try:
-            self.getMeshPoints()
-            self.getGammaCCoordinates()
-            self.loadIES(loadFile = True, route = IESroute, rotationAngle = -luminairesRotation)    
-            self.getStepGammaCeL()
-            self.illuminanceStep()                
-            self.observerBetaStep()
+
+            #self.getMeshPoints()
+            #self.getGammaCCoordinates()
+            #self.loadIES(loadFile = True, route = IESroute, rotationAngle = -luminairesRotation)    
+            #self.getStepGammaCeL()
+            #self.illuminanceStep()                
+            #self.observerBetaStep()
             self.luminanceStep()            
 
         except:
@@ -514,7 +522,25 @@ class LuminanceCalculator():
                                                                   
                 if(rotationAngle == 0):
                     IES=preRotationIES
+
+                if(rotationAngle == 90):
+                    IES =  np.zeros((preRotationIESCSize, preRotationIESGammaSize))
+
+                    print("Solución temporal para la rotacion de 90º")
+
+                    rotationOffSet= int(90/self.StepC) 
+                    for i in range(preRotationIESCSize):
+                        if(rotationOffSet + i >= (360/self.StepC)):
+                            IES[i] = preRotationIES[i+rotationOffSet-int(360/self.StepC)+1]
+                        else:
+                            IES[i] = preRotationIES[i+rotationOffSet]
+                        
+                    IES[0] = IES[preRotationIESCSize-1] 
+
+
+                    
                 else:
+                    # Hay que aplicar el mismo paradigma del orden de los arreglos, usado en la condición anterior
                     
                     preRotationIESCIndex = np.zeros((preRotationIESCSize))
                     for i in range(preRotationIESCSize):
@@ -646,9 +672,9 @@ class LuminanceCalculator():
         self.Emax = Emax
         self.Emin = Emin
         self.Eav = Eav
-        self.g1 = g1
-        self.g2 = g2
-        self.g3 = g3
+        self.g1 = g1                            # Relación de uniformidad 1 min/avg
+        self.g2 = g2                            # Relación de uniformidad 2 min/max
+        self.g3 = g3                            # Relación de uniformidad 3 Eav/Emax
         
     def observerBetaStep(self):
         """Calculates the observer coordinates vectors for luminance calculation.""" 
@@ -781,17 +807,47 @@ class LuminanceCalculator():
         Lmax = np.zeros((self.roadLanes))
         Lmin = np.zeros((self.roadLanes))
         Lav = np.zeros((self.roadLanes))
+        g1 = np.zeros((self.roadLanes))
+        g2 = np.zeros((self.roadLanes))
+        g3 = np.zeros((self.roadLanes))
+        ul = np.zeros((self.roadLanes))
+
+        ulRow = np.zeros((self.roadLanes))      # Filas de cada observador
+        
+        
+
 
         for i in range(self.roadLanes):
+            ulRow[i]=(3*i)+1
+
 
             Lmax[i]=np.max(luminance[i])
             Lmin[i]=np.min(luminance[i])
             Lav[i]=np.mean(luminance[i])
+            g1[i]=Lmin[i]/Lav[i]
+            g2[i]=Lmin[i]/Lmax[i]
+            g3[i]=Lav[i]/Lmax[i]
+
+
+            observerRow = np.zeros((self.N))
+            for j in range(self.N):
+                observerRow[j] = luminance[i][j][int(ulRow[i])]
+
+            ul[i] = np.min(observerRow)/np.max(observerRow)
+            
+
+
 
         self.Lmax = Lmax
         self.Lmin = Lmin
         self.Lav = Lav
-        self.luminance = luminance        
+        self.luminance = luminance       
+
+        self.ul = ul                            # Uniformidad longitudinal
+        self.Lg1 = g1                           # Relación de uniformidad 1 Lmin/Lavg
+        self.Lg2 = g2                           # Relación de uniformidad 2 Lmin/Lmax
+        self.Lg3 = g3                           # Relación de uniformidad 3 Lav/Lmax
+
 
     def veilIlluminanceStep(self):
         """This function executes the Veil Illuminance calculation according to the norm."""
@@ -1032,9 +1088,9 @@ class LuminanceCalculator():
         print("Emax: " + str(self.Emax))
         print("Emin: " + str(self.Emin))
         print("Eav: " + str(self.Eav))
-        print("g1: "+str(self.g1))
-        print("g2: "+str(self.g2))
-        print("g3: "+str(self.g3))
+        print("Relación de uniformidad 1 Emin/Eavg (g1): " + str(self.g1))
+        print("Relación de uniformidad 1 Emin/Emax (g2): " + str(self.g2))
+        print("Relación de uniformidad 1 Eav/Emax (g3): " + str(self.g3))
     
     def printObserverBetaStepData(self):
         """Print the observer coordinates used at luminance calculations."""
@@ -1054,6 +1110,11 @@ class LuminanceCalculator():
         print("Lmax: " + str(self.Lmax))
         print("Lmin: " + str(self.Lmin))
         print("Lav: " + str(self.Lav))
+        print("Relación de uniformidad 1 Lmin/Lavg (Lg1): " + str(self.Lg1))
+        print("Relación de uniformidad 2 Lmin/Lmax (Lg2): " + str(self.Lg2))
+        print("Relación de uniformidad 3 Lav/Lmax (Lg3): " + str(self.Lg3))
+        print("Uniformidad longitudinal (uL): "+ str(self.ul))
+
 
     def printFinalData(self):
         """Prints a nutshell of the calculated data."""
@@ -1068,9 +1129,9 @@ class LuminanceCalculator():
         print("Emax: " + str(self.Emax))
         print("Emin: " + str(self.Emin))
         print("Eav: " + str(self.Eav))
-        print("g1: " + str(self.g1))
-        print("g2: " + str(self.g2))
-        print("g3: " + str(self.g3))
+        print("Relación de uniformidad 1 Emin/Eavg (g1): " + str(self.g1))
+        print("Relación de uniformidad 2 Emin/Emax (g2): " + str(self.g2))
+        print("Relación de uniformidad 3 Eav/Emax (g3): " + str(self.g3))
 
 
 
@@ -1079,6 +1140,10 @@ class LuminanceCalculator():
         print("Lmax: " + str(self.Lmax))
         print("Lmin: " + str(self.Lmin))
         print("Lav: " + str(self.Lav))
+        print("Relación de uniformidad 1 Lmin/Lavg (Lg1): " + str(self.Lg1))
+        print("Relación de uniformidad 2 Lmin/Lmax (Lg2): " + str(self.Lg2))
+        print("Relación de uniformidad 3 Lav/Lmax (Lg3): " + str(self.Lg3))
+        print("Uniformidad longitudinal (uL): "+ str(self.ul))
 
     def printVeilIlluminanceStepData(self):
         """Print Veil Illuminance data."""
@@ -1089,7 +1154,7 @@ class LuminanceCalculator():
 
 def main():
 
-    test = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
+    test = LuminanceCalculator(IESroute="Fotometrias/Sit1.ies", luminairesHeight = 4, luminairesBetweenDistance = 20, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 1, Fm= 0.8)
     #test.printGetMeshPointsData()
     #test.printGetGammaCCoordinatesData()
     #test.printIES()

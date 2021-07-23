@@ -20,6 +20,8 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.recreado=[False for i in range(len(self.widgets))]
         self.recrear(4)
         self.gridFileName="L20DefaultImage.jpg"
+        self.stopDistanceCalculator = L20Calculator()
+        self.stopDistanceCalculator.SD = 100
 
 
     def recrear(self,id):
@@ -28,40 +30,40 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                 j.place_forget()
         self.last=id
         
-        self.dayLight = Button(self.master, text="Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4))
+        self.dayLight = Button(self.master, text="1.Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4))
         self.dayLight.place(x=40,y=85)
 
-        self.foto = Button(self.master, text="Areas Portal",width=12,height=3,command=lambda:self.recrear(1))
+        self.foto = Button(self.master, text="3.Areas del \n Portal",width=12,height=3,command=lambda:self.recrear(1))
         self.foto.place(x=40,y=160)    
 
-        self.l20 = Button(self.master, text="Parametros de\n calculo",width=12,height=3,command=lambda: self.recrear(2))
+        self.l20 = Button(self.master, text="2.Parametros\n de calculo",width=12,height=3,command=lambda: self.recrear(2))
         self.l20.place(x=40,y=160+75)
 
-        self.configuraciónSecciones = Button(self.master, text="Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3))
+        self.configuraciónSecciones = Button(self.master, text="1.Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3))
         self.configuraciónSecciones.place(x=40,y=385)
 
-        self.distribucionLuminarias = Button(self.master, text="Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5))
+        self.distribucionLuminarias = Button(self.master, text="2.Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5))
         self.distribucionLuminarias.place(x=40,y=385+75)
 
 
 
 
         if id==1:
-            self.foto = Button(self.master, text="Areas Portal",width=12,height=3,bg='#336B87',command=lambda:self.recrear(1))
+            self.foto = Button(self.master, text="3.Areas del \n Portal",width=12,height=3,bg='#336B87',command=lambda:self.recrear(1))
             self.foto.place(x=40,y=160)
         elif id==2:
-            self.l20 = Button(self.master, text="Parametros de\n calculo",width=12,bg='#336B87',height=3,command=lambda: self.recrear(2))
+            self.l20 = Button(self.master, text="2.Parametros\n de calculo",width=12,bg='#336B87',height=3,command=lambda: self.recrear(2))
             self.l20.place(x=40,y=160+75)
 
         elif id==5:
-            self.distribucionLuminarias = Button(self.master, text="Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5),bg='#336B87')
+            self.distribucionLuminarias = Button(self.master, text="2.Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5),bg='#336B87')
             self.distribucionLuminarias.place(x=40,y=385+75)
         
         elif id==4:
-            self.dayLight = Button(self.master, text="Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4),bg='#336B87')
+            self.dayLight = Button(self.master, text="1.Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4),bg='#336B87')
             self.dayLight.place(x=40,y=85)
         elif id==3:
-            self.configuraciónSecciones = Button(self.master, text="Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3),bg='#336B87')
+            self.configuraciónSecciones = Button(self.master, text="1.Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3),bg='#336B87')
             self.configuraciónSecciones.place(x=40,y=385)
 
         if self.recreado[id]==False:
@@ -92,7 +94,9 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
     def generarCircunferencia(self):
         self.grilla.reset(escalate = True)
-        self.grilla.firsStep(float(self.coordenada_x_entry.get()),float(self.coordenada_y_entry.get()),float(self.radio_circulo_entry.get()),float(self.radio_portal_entry.get()))
+
+        print("Pendiente bug de distancia de parada")
+        self.grilla.firsStep(newGridCenterOffsetX = float(self.coordenada_x_entry.get()),newGridCenterOffsetY = float(self.coordenada_y_entry.get()),SD = self.stopDistanceCalculator.SD, newInteriorCircleRadius = float(self.radio_circulo_entry.get()),entranceRadiusMeters = float(self.radio_portal_entry.get()))        
         self.grilla.secondStep(int(self.divisiones_angulo_entry.get()),int(self.divisiones_radio_entry.get()))
         self.grilla.fillGrid()
 
@@ -185,6 +189,25 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
     def getDataPhoto(self):
         areasPercentageArray=self.grilla.getTotalAreas()
+        hemisferio=dict()
+        hemisferio["Norte"]=0
+        hemisferio["Sur"]=1
+        direction=dict()
+        direction["Norte"]=0
+        direction["Occidente"]=1
+        direction["Sur"]=2
+        direction["Oriente"]=3
+        montañoso=dict()
+        montañoso["Si"]=True
+        montañoso["No"]=False
+
+        self.l20Resultados = L20Calculator(maxSpeed = float(self.vMax.get()), slope = float(self.inclinacionCarretera.get()), fiftyPercentThreshold= False,
+                    MountainousTerrain=montañoso[self.esMontañoso.get()],
+                    cardinalDirection = direction[self.orientacionTunel.get()], Hemisphere = hemisferio[self.hemisferio.get()],
+                    Lc = float(self.lc.get()), Lr = float(self.lr.get()), LeRocks = float(self.ler.get()), LeBuildings = float(self.leb.get()),
+                    LeSnow =float(self.les.get()), LeMeadows = float(self.lem.get()),
+                    percentArray = self.grilla.getTotalAreas())
+
         names=["Cielo","Calzada","Rocas", "Edificios", "Nieve", "Vegetacion","Túnel"]
         message=""
         for i in range(7):
@@ -192,6 +215,18 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
             if i<6:
                 message+=", "
         mb.showinfo(title="Porcentaje Materiales",message=message)
+        unidades = "cd/m2"
+
+        out=("Luminancias: Lc: " + str(self.l20Resultados.Lc)+unidades  +", LeRocks: "
+             + str(self.l20Resultados.LeRocks)+unidades  + ", LeBuildings: " + str(self.l20Resultados.LeBuildings) +unidades +
+             ", LeSnow: " + str(self.l20Resultados.LeSnow) +unidades + ", LeMeadows: " + str(self.l20Resultados.LeMeadows) +unidades + ", Lr: " +
+             str(self.l20Resultados.Lr)+unidades 
+             +", Lth: "+ str(round(self.l20Resultados.Lth,3))+unidades )
+        mb.showinfo(title="Calculo L20",message=out)
+
+
+
+
     def createEntry(self,name,x1,y1,id,width1=150,height1=89,default=0.0):
 
         globals()[name]=Entry(font=('Verdana',30),justify='center')
@@ -381,12 +416,12 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.widgets[1].append(self.divisiones_radio )
 
         self.radio_portal_entry = Entry(font=('Verdana',15),justify='center')
-        self.radio_portal_entry.insert(END,90)
+        self.radio_portal_entry.insert(END,5)
         self.radio_portal_entry.place(width=70,height=38,x=1020,y=60+corrimiento+corrimiento2*0)
         self.widgets[1].append(self.radio_portal_entry)
 
         self.radio_circulo_entry = Entry(font=('Verdana',15),justify='center')
-        self.radio_circulo_entry.insert(END,55)
+        self.radio_circulo_entry.insert(END,45)
         self.radio_circulo_entry.place(width=70,height=38,x=1020,y=60+corrimiento+corrimiento2*1)
         self.widgets[1].append(self.radio_circulo_entry)
 
@@ -499,12 +534,12 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.createLabel("kiloh",730+340,55,id,7,2,label="Km/h")
         self.createLabel("gradossimbolo",730+340,55+corrimientoy*1,id,7,2,label="°")
 
-        self.createEntry("vMax",730+230,55,id,width1=100,height1=38,default=60)
-        self.createEntry("inclinacionCarretera",730+230,55+corrimientoy*1,id,width1=100,height1=38,default=0.5)
+        self.createEntry("vMax",730+230,55,id,width1=100,height1=38,default=90)
+        self.createEntry("inclinacionCarretera",730+230,55+corrimientoy*1,id,width1=100,height1=38,default=0.1)
         self.createSelector("esMontañoso",["Si","No"],id,730+230,55+corrimientoy*2+7,11,9)
         self.createSelector("orientacionTunel",["Norte","Occidente","Sur","Oriente"],id,730+230,55+corrimientoy*3+7,11,9)
         self.createSelector("hemisferio",["Norte","Sur"],id,730+230,55+corrimientoy*4+7,11,9)
-        self.createButton("Ejecutar cálculos",675,605,id,20,2,command="parametrosCalculo")
+        self.createButton("Cálcular distancia de parada",675,605,id,25,2,command="parametrosCalculo")
 
 
     def configuracionDeLuminarias(self):
@@ -518,15 +553,15 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.widgets[3].append(self.seccionDelTunel)
         corrimiento=60
         
-        self.alturaLuminarias =Label(master, text="Altura de\n luminarias",width=14,height=3,bg=color,fg='white')
+        self.alturaLuminarias =Label(master, text="Altura de\n luminarias(m)",width=14,height=3,bg=color,fg='white')
         self.alturaLuminarias.place(x=250,y=50+corrimiento)
         self.widgets[3].append(self.alturaLuminarias)
         
-        self.interDistancia =Label(master, text="Inter\n distancia(mt)",width=14,height=3,bg=color,fg='white')
+        self.interDistancia =Label(master, text="Inter\n distancia(m)",width=14,height=3,bg=color,fg='white')
         self.interDistancia.place(x=250,y=50+corrimiento*2)
         self.widgets[3].append(self.interDistancia)
 
-        self.anchoDelCamino =Label(master, text="Ancho del\n camino(mt)",width=14,height=3,bg=color,fg='white')
+        self.anchoDelCamino =Label(master, text="Ancho del\n camino(m)",width=14,height=3,bg=color,fg='white')
         self.anchoDelCamino.place(x=250,y=50+corrimiento*3)
         self.widgets[3].append(self.anchoDelCamino)
 
@@ -609,6 +644,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
         luminancias=[]
         for i in range(numeroSecciones):
+            print("Distribución: " + str(secciones[i][7]))
             luminancias.append(LuminanceCalculator(IESroute=secciones[i][0], luminairesHeight = secciones[i][1], luminairesBetweenDistance = secciones[i][2],
                                                    roadWidth = secciones[i][3],
                                    roadLanes=int(secciones[i][4]), luminairesRotation = secciones[i][5], luminariesOverhang = secciones[i][6],
@@ -684,28 +720,17 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         montañoso=dict()
         montañoso["Si"]=True
         montañoso["No"]=False
-       
-        self.l20Resultados = L20Calculator(maxSpeed = float(self.vMax.get()), slope = float(self.inclinacionCarretera.get()), fiftyPercentThreshold= False,
-                            MountainousTerrain=montañoso[self.esMontañoso.get()],
-                            cardinalDirection = direction[self.orientacionTunel.get()], Hemisphere = hemisferio[self.hemisferio.get()],
-                            Lc = float(self.lc.get()), Lr = float(self.lr.get()), LeRocks = float(self.ler.get()), LeBuildings = float(self.leb.get()),
-                            LeSnow =float(self.les.get()), LeMeadows = float(self.lem.get()),
-                            percentArray = self.grilla.getTotalAreas())
-        #l20.printData()
-        unidades="cd/m2"
 
-        out=("Luminancias: Lc: " + str(self.l20Resultados.Lc)+unidades  +", LeRocks: "
-             + str(self.l20Resultados.LeRocks)+unidades  + ", LeBuildings: " + str(self.l20Resultados.LeBuildings) +unidades +
-             ", LeSnow: " + str(self.l20Resultados.LeSnow) +unidades + ", LeMeadows: " + str(self.l20Resultados.LeMeadows) +unidades + ", Lr: " +
-             str(self.l20Resultados.Lr)+unidades 
-             +", Lth: "+ str(round(self.l20Resultados.Lth,3))+unidades )
-        mb.showinfo(title="Calculo L20",message=out)
+        self.stopDistanceCalculator = L20Calculator(maxSpeed = float(self.vMax.get()), slope = float(self.inclinacionCarretera.get()), fiftyPercentThreshold= False)
+
+        mb.showinfo(title="Distancia de Parada",message="La distancia de parada es de: " + "{:.2f}".format(self.stopDistanceCalculator.SD) + "m")
 
 
-              
-root = Tk()
-v=Ventana(root)
-root.mainloop()
+
+def main():  
+    root = Tk()
+    v=Ventana(root)
+    root.mainloop()
 
 
 if __name__ == '__main__':

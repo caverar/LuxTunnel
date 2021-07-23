@@ -19,7 +19,7 @@ class L20Calculator():
         self.Hemisphere = Hemisphere                                    # 0: North, 1: South
 
 
-        self.setLuminances(Lc = Lc, Lr = Lr, LeRocks = LeRocks, LeBuildings = LeBuildings, LeSnow =LeSnow, LeMeadows = LeMeadows, )
+        self.setLuminances(Lc = Lc, Lr = Lr, LeRocks = LeRocks, LeBuildings = LeBuildings, LeSnow =LeSnow, LeMeadows = LeMeadows )
                                                             
         self.setKFactor()                                               # k factor Lth/L20
         self.setFriction()                                              # wet friction 

@@ -2,9 +2,11 @@ from create_table_fpdf2 import PDF
 from LuminanceCalculator import LuminanceCalculator
 from L20Calculator import L20Calculator
 
+import numpy as np
+
 class PDFGenerator():
     
-    def exportData(self, l20=L20Calculator(), route="LuminanceData", luminanceTunnelEntranceImageRoute="L20DefaultImage.jpg", sections=[LuminanceCalculator()]):
+    def exportData(self, l20=L20Calculator(), route="LuminanceData.pdf", luminanceTunnelEntranceImageRoute="L20DefaultImage.jpg", sections=[LuminanceCalculator()]):
         """
         Export Luminance Data to a PDF file
         """
@@ -108,7 +110,7 @@ class PDFGenerator():
                 ["Distribución de luminarias", "Distribución " + str(section.luminariesDistribution)],            
                 ["Saliente de la luminaria sobre la calzada ", str(section.luminariesOverhang) + " m"],
                 ["Rotacion de la luminaria ", str(-section.luminairesRotation) + "º"],
-                ["Factor de mantenimiento", str(section.roadLanes)],
+                ["Factor de mantenimiento", str(section.Fm)],
                 ["Ruta de archivo fotométrico", section.IESroute[-20:]]
             ]
             
@@ -126,8 +128,9 @@ class PDFGenerator():
 
             # illuminance nutshell
             illuminanceNutshellArray = [
-                ["Iluminancia maxima", "Iluminancia promedio", "Iluminancia minima", "Factor g1", "Factor g2", "Factor g3" ], 
-                ["{:.4f}".format(section.Emax)+" lx","{:.4f}".format(section.Eav)+" lx", "{:.4f}".format(section.Emin)+" lx", "{:.4f}".format(section.g1), "{:.4f}".format(section.g2), "{:.4f}".format(section.g3)]
+                ["Iluminancia maxima", "Iluminancia promedio", "Iluminancia minima", "g1(Uh)  minimo/promedio", "g2 minimo/maximo", "g3 promedio/maximo" ], 
+                ["{:.4f}".format(section.Emax)+" lx","{:.4f}".format(section.Eav)+" lx", "{:.4f}".format(section.Emin)+" lx", "{:.4f}".format(section.g1) +" lx",
+                 "{:.4f}".format(section.g2) +" lx", "{:.4f}".format(section.g3) + " lx"]
             ]
 
             # Luminance
@@ -155,10 +158,20 @@ class PDFGenerator():
 
             for i in range(section.roadLanes):
                 luminanceNutshellArray[i]=[
-                    ["Luminancia maxima", "Luminancia promedio", "Luminancia minima"],
-                    ["{:.4f}".format(section.Lmax[i])+" cd/m2","{:.4f}".format(section.Lav[i])+" cd/m2", "{:.4f}".format(section.Lmin[i])+ " cd/m2"]
+                    ["Luminancia maxima", "Luminancia promedio", "Luminancia minima", "g1(Uo)  min/promedio", "g2    min/maximo", "g3 promedio/max", "U. Longitudinal (Ul)"],
+                    ["{:.4f}".format(section.Lmax[i])+" cd/m2","{:.4f}".format(section.Lav[i])+" cd/m2", "{:.4f}".format(section.Lmin[i]) +" cd/m2", 
+                     "{:.4f}".format(section.Lg1[i])+ " cd/m2", "{:.4f}".format(section.Lg2[i])+ " cd/m2", "{:.4f}".format(section.Lg3[i]) + " cd/m2",
+                     "{:.4f}".format(section.ul[i]) + " cd/m2"]
                 ] 
-                
+            
+            
+            globalLuminanceNutshellArray =[
+                ["Luminancia maxima", "Luminancia promedio", "Luminancia minima", "g1(Uo)  min/promedio", "g2    min/maximo", "g3 promedio/max", "U. Longitudinal (Ul)"],
+                ["{:.4f}".format(np.mean(section.Lmax))+" cd/m2","{:.4f}".format(np.mean(section.Lav))+" cd/m2", "{:.4f}".format(np.mean(section.Lmin)) +" cd/m2", 
+                 "{:.4f}".format(np.mean(section.Lg1) )+ " cd/m2", "{:.4f}".format(np.mean(section.Lg2))+ " cd/m2", "{:.4f}".format(np.mean(section.Lg3)) + " cd/m2",
+                 "{:.4f}".format(np.mean(section.ul)) + " cd/m2"]
+            ]
+
             
 
             # Section Title
@@ -180,7 +193,7 @@ class PDFGenerator():
 
             # Road
             pdf.set_font("Times", "B", size=15)
-            pdf.cell(80, 10, "Luminancia en el pavimento:", border = False)
+            pdf.cell(80, 10, "Resultados de iluminación:", border = False)
             pdf.ln(h=15)
 
             pdf.set_font("Times", size=12)
@@ -195,16 +208,18 @@ class PDFGenerator():
 
 
             pdf.set_font("Times", size=12)
-            pdf.cell(65, 10, "Resumen Iluminancia:", border = False, align="C")
+            pdf.cell(45, 10, "Resumen Iluminancia:", border = False, align="C")
             pdf.ln(h=8)
             pdf.set_font("Times", size=10)
-            pdf.create_table(table_data = illuminanceNutshellArray, cell_width="uneven", x_start="C", align_data = "C", align_header="C")
-            pdf.ln()
+            pdf.create_table(table_data = illuminanceNutshellArray, cell_width="even", x_start="C", align_data = "C", align_header="C")
+            pdf.set_font("Times", "I", size=7)
+            pdf.multi_cell(0, 10, "\"g1\", \"g2\" y  \"g3\"  son la relación de uniformidad, calculada con concientes entre la iluminancia minima, maxima y promedio.", border = False,  align="C")
+            pdf.ln(h=1)
 
 
             for i in range(section.roadLanes):
                 pdf.set_font("Times", size=12)
-                pdf.cell(80, 10, "    Matriz de Luminancia del observador " + str(i) + ":", border = False)
+                pdf.cell(80, 10, "    Matriz de Luminancia del observador " + str(i+1) + ":", border = False)
                 pdf.ln(h=8)
                 pdf.set_font("Times", size=6)
                 pdf.create_table(table_data = luminanceDataArray[i], cell_width="even", x_start=20, align_data = "C", align_header="C")
@@ -213,12 +228,24 @@ class PDFGenerator():
                 pdf.ln(h=1)
 
                 pdf.set_font("Times", size=12)
-                pdf.cell(146, 10, "Resumen luminancia del observador "+ str(i) + ":", border = False, align="C")
+                pdf.cell(75, 10, "Resumen Luminancia del observador "+ str(i+1) + ":", border = False, align="C")
                 pdf.ln(h=8)
                 pdf.set_font("Times", size=10)
-                pdf.create_table(table_data = luminanceNutshellArray[i], cell_width="uneven", x_start="C", align_data = "C", align_header="C")
-                pdf.ln()
+                pdf.create_table(table_data = luminanceNutshellArray[i], cell_width="even", x_start="C", align_data = "C", align_header="C")
+                pdf.set_font("Times", "I", size=7)
+                pdf.multi_cell(0, 10, "\"g1\", \"g2\" y  \"g3\"  son la relación de uniformidad, calculada con concientes entre la luminancia minima, maxima y promedio.", border = False,  align="C")
+                pdf.ln(h=1)
 
+
+            pdf.set_font("Times", size=12)
+            pdf.cell(60, 10, "Promedio de los observadores:", border = False, align="C")
+            pdf.ln(h=8)
+            pdf.set_font("Times", size=10)
+            pdf.create_table(table_data = globalLuminanceNutshellArray, cell_width="even", x_start="C", align_data = "C", align_header="C")
+            pdf.set_font("Times", "I", size=7)
+            pdf.multi_cell(0, 10, "\"g1\", \"g2\" y  \"g3\"  son la relación de uniformidad, calculada con concientes entre la luminancia minima, maxima y promedio.", border = False,  align="C")
+            pdf.ln(h=1)
+            
 
             # Walls
             pdf.set_font("Times", "B", size=15)
@@ -229,19 +256,19 @@ class PDFGenerator():
             pdf.cell(80, 10, "      Pendiente por implementar", border = False)
             pdf.ln(h=20)
 
-        pdf.output(route+".pdf")
+        pdf.output(route)
 
 def main():
     test = PDFGenerator()
     l20 = L20Calculator(maxSpeed = 60, slope = 0.5, fiftyPercentThreshold= False,  cardinalDirection = 0, Hemisphere = 0, 
                         percentArray = [0.10,0.10,0.10,0.10,0.10,0.20,0.30])
-
-    section1 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 0, Fm= 0.8)
-    section2 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 1, Fm= 0.8)
+    section0 = LuminanceCalculator(IESroute="Fotometrias/Sit1.ies", luminairesHeight = 4, luminairesBetweenDistance = 20, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 1, Fm= 0.8)
+    section1 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
+    section2 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 0, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
     section3 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 2, Fm= 0.8)
     section4 = LuminanceCalculator(IESroute="Fotometrias/Sit2.ies", luminairesHeight = 4, luminairesBetweenDistance = 40, roadWidth = 10, roadLanes=2, luminairesRotation = 90, luminariesOverhang = 2, luminariesDistribution = 3, Fm= 0.8)
 
-    array = [section1,section1,section2,section3,section4]
+    array = [section0,section1,section2,section3,section4]
     test.exportData(l20=l20,sections= array)
 
 
