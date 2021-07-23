@@ -50,7 +50,9 @@ class LuminanceCalculator():
                 D=self.luminairesBetweenDistance/N
 
         Px = [[0 for j in range(3*self.roadLanes)] for i in range(N)]
-        Py = [[0 for j in range(3*self.roadLanes)] for i in range(N)]     
+        Py = [[0 for j in range(3*self.roadLanes)] for i in range(N)]
+        self.Px = Px
+        self.Py = Py
         
         
         
