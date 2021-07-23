@@ -19,9 +19,9 @@ class LuminanceCalculator():
         self.luminairesBetweenDistance = luminairesBetweenDistance                              
         self.roadWidth = roadWidth                                                              # 30 max
         self.roadLanes = roadLanes                                                              # 3 max                    
-        self.luminairesRotation = -luminairesRotation                                           # Degrees
-        
-        
+        self.luminairesRotation = -luminairesRotation                                           # Degrees       
+
+
         try:
             self.getMeshPoints()
             self.getGammaCCoordinates()

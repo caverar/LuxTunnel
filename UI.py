@@ -608,10 +608,10 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         for i in range(numeroSecciones):
             luminancias.append(LuminanceCalculator(IESroute=secciones[i][0], luminairesHeight = secciones[i][1], luminairesBetweenDistance = secciones[i][2],
                                                    roadWidth = secciones[i][3],
-                                   roadLanes=secciones[i][4], luminairesRotation = secciones[i][5], luminariesOverhang = secciones[i][6],
+                                   roadLanes=int(secciones[i][4]), luminairesRotation = secciones[i][5], luminariesOverhang = secciones[i][6],
                                                    luminariesDistribution = secciones[i][7],
                                                    Fm= fm))
-            luminancias[-1].printFinalData()
+            #luminancias[-1].printFinalData()
         
         
         
