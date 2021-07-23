@@ -652,7 +652,8 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                                                    Fm= fm))
 
         test = PDFGenerator()
-        self.routePdf=filedialog.asksaveasfile(title = "Guardar pdf de resultados como :").name
+        files = [('PDF', '*.pdf'),('Todos los archivos', '*.*')]
+        self.routePdf=filedialog.asksaveasfile(title = "Guardar pdf de resultados como :", defaultextension="pdf", initialfile="Informe",filetypes=files).name
 
         test.exportData(route=self.routePdf, luminanceTunnelEntranceImageRoute=self.gridFileName,l20=self.l20Resultados,sections= luminancias)
         mb.showinfo(title="Resultados Generados",message="Atención, cálculo satisfactorio, se ha generado un informe de resultados en la ruta: "+self.routePdf)
