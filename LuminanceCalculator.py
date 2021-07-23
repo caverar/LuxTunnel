@@ -35,7 +35,7 @@ class LuminanceCalculator():
             mb.showerror("ERROR","ERROR: No se pudo completar apropiadamente el proceso de calculo.")
 
 
-        self.veilIlluminanceStep()
+        #self.veilIlluminanceStep()
     
     def getMeshPoints(self):
         """Get Mesh coordinates from interdistance requirements.""" 
