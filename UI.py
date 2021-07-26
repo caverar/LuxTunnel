@@ -647,8 +647,8 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
             print("Distribución: " + str(secciones[i][7]))
             luminancias.append(LuminanceCalculator(IESroute=secciones[i][0], luminairesHeight = secciones[i][1], luminairesBetweenDistance = secciones[i][2],
                                                    roadWidth = secciones[i][3],
-                                   roadLanes=int(secciones[i][4]), luminairesRotation = secciones[i][5], luminariesOverhang = secciones[i][6],
-                                                   luminariesDistribution = int(secciones[i][7]),
+                                   roadLanes=int(secciones[i][4]), luminairesRotation = secciones[i][5], luminariesOverhang = secciones[i][7],
+                                                   luminariesDistribution = int(secciones[i][6]),
                                                    Fm= fm))
 
         test = PDFGenerator()

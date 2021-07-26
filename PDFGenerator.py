@@ -176,7 +176,7 @@ class PDFGenerator():
 
             # Section Title
             pdf.set_font("Times", "B", size=20)
-            pdf.cell(80, 10, "Sección " + str(index) + ": " + sectionNamesArray[index], border = False)
+            pdf.cell(80, 10, "Sección " + str(index+1) + ": " + sectionNamesArray[index], border = False)
             pdf.ln(h=10)
             pdf.line(pdf.x,pdf.y,pdf.x+180,pdf.y)
             pdf.ln(5)
