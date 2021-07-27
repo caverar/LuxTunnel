@@ -15,6 +15,8 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
 
     def __init__(self,master):
         self.widgets=[[],[],[],[],[],[]]
+        self.active=[False for i in range(7)]
+        self.active[-1]=True
         self.menushow(master)
         self.last=-1
         self.recreado=[False for i in range(len(self.widgets))]
@@ -29,31 +31,35 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
             for j in self.widgets[self.last]:
                 j.place_forget()
         self.last=id
+        self.active[id]=True
+
         
         self.dayLight = Button(self.master, text="1.Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4))
         self.dayLight.place(x=40,y=85)
-
-        self.foto = Button(self.master, text="3.Areas del \n Portal",width=12,height=3,command=lambda:self.recrear(1))
-        self.foto.place(x=40,y=160)    
-
+        if self.active[2]:
+            self.foto = Button(self.master, text="3.Areas del \n Portal",width=12,height=3,command=lambda:self.recrear(1))
+            self.foto.place(x=40,y=160+75)    
         self.l20 = Button(self.master, text="2.Parametros\n de calculo",width=12,height=3,command=lambda: self.recrear(2))
-        self.l20.place(x=40,y=160+75)
+        self.l20.place(x=40,y=160)
 
-        self.configuraciónSecciones = Button(self.master, text="1.Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3))
-        self.configuraciónSecciones.place(x=40,y=385)
+        if(self.active[1]):
+            self.LuminanciaTunel = Button(self.master, text="Luminancia Tunel",width=16,height=3,highlightbackground='#336B87',command=self.reboot)
+            self.LuminanciaTunel.place(x=10,y=310)
+            self.configuraciónSecciones = Button(self.master, text="1.Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3))
+            self.configuraciónSecciones.place(x=40,y=385)
 
-        self.distribucionLuminarias = Button(self.master, text="2.Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5))
-        self.distribucionLuminarias.place(x=40,y=385+75)
-
+        if(self.active[3]):        
+            self.distribucionLuminarias = Button(self.master, text="2.Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5))
+            self.distribucionLuminarias.place(x=40,y=385+75)
 
 
 
         if id==1:
             self.foto = Button(self.master, text="3.Areas del \n Portal",width=12,height=3,bg='#336B87',command=lambda:self.recrear(1))
-            self.foto.place(x=40,y=160)
+            self.foto.place(x=40,y=160+75)
         elif id==2:
             self.l20 = Button(self.master, text="2.Parametros\n de calculo",width=12,bg='#336B87',height=3,command=lambda: self.recrear(2))
-            self.l20.place(x=40,y=160+75)
+            self.l20.place(x=40,y=160)
 
         elif id==5:
             self.distribucionLuminarias = Button(self.master, text="2.Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5),bg='#336B87')
@@ -346,9 +352,9 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         over="#763626"
         master=self.master
         # crear label
-        self.grilla = illuminancePictureFrame(widowsSizeX = 600, widowsSizeY = 400)
+        self.grilla = illuminancePictureFrame(widowsSizeX = 600, widowsSizeY = 450)
         self.grilla.grid( row = 0, column = 0,rowspan = 3, columnspan = 6, sticky = tk.W+tk.E+tk.N+tk.S)
-        self.grilla.place(x=240,y=160)
+        self.grilla.place(x=240,y=160-55)
         self.widgets[1].append(self.grilla)
         areasPercentageArray = [0 for i in range(7)]
         self.ruta_foto =Label(master, text="Ruta foto:",width=20,height=2,bg=color,fg='white') 
@@ -365,21 +371,7 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.widgets[1].append(self.cargarImagen)
 
         corrimiento=55
-        self.altura_l =Label(master, text="Altura entrada:",width=20,height=2,bg=color,fg='white')
-        self.altura_l.place(x=240,y=60+corrimiento)
-        self.widgets[1].append(self.altura_l )
 
-        self.altura = Entry(font=('Verdana',15),justify='center')
-        self.altura.insert(END,0.0)
-        self.altura.place(width=200,height=38,x=425,y=60+corrimiento)
-        self.widgets[1].append(self.altura)
-
-        self.label_frameAltura1 = Frame(width=80,height=38,bg=color)
-        self.label_frameAltura1.pack_propagate(0)
-        self.metros=Label(self.label_frameAltura1, font=('Verdana',13),text="metros",bg=color,fg='white',anchor="center")
-        self.metros.place(x=8,y=4)
-        self.label_frameAltura1.place(x=640,y=60+corrimiento)
-        self.widgets[1].append(self.label_frameAltura1)
         """
         self.img2=Image.open("circunferencia.png")
         self.img2=self.img2.resize((600, 400))
@@ -499,8 +491,6 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         self.master['bg'] = '#2A3132'.upper() #Color de background
         self.L20 = Button(master, text="L20",width=16,height=3,highlightbackground=color1,command=self.reboot)
         self.L20.place(x=10,y=10)
-        self.LuminanciaTunel = Button(master, text="Luminancia Tunel",width=16,height=3,highlightbackground=color1,command=self.reboot)
-        self.LuminanciaTunel.place(x=10,y=310)
         w = Canvas(master, width=1150, height=650)
         w.create_rectangle(0, 0, 1150, 650, fill="#90AFC5", outline = 'black')
         w.place(x=200,y=25)
