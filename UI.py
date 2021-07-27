@@ -32,24 +32,31 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
                 j.place_forget()
         self.last=id
         self.active[id]=True
+        bgl20='white'
+        bgLuminanciaTunel='white'
+        if id  in [1,2,4]:
+            bgl20='#336B87'
+        else:
+            bgLuminanciaTunel='#336B87'
 
-        
-        self.dayLight = Button(self.master, text="1.Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4))
+        self.L20 = Button(self.master, text="L20",width=16,height=3,highlightbackground='#336B87',bg=bgl20,command=self.reboot)
+        self.L20.place(x=10,y=10)
+        self.dayLight = Button(self.master, text="1.Evaluar\nRequerimientos",width=12,height=3,command=lambda:self.recrear(4),bg="white")
         self.dayLight.place(x=40,y=85)
         if self.active[2]:
-            self.foto = Button(self.master, text="3.Areas del \n Portal",width=12,height=3,command=lambda:self.recrear(1))
+            self.foto = Button(self.master, text="3.Areas del \n Portal",width=12,height=3,command=lambda:self.recrear(1),bg="white")
             self.foto.place(x=40,y=160+75)    
-        self.l20 = Button(self.master, text="2.Parametros\n de calculo",width=12,height=3,command=lambda: self.recrear(2))
+        self.l20 = Button(self.master, text="2.Parametros\n de calculo",width=12,height=3,command=lambda: self.recrear(2),bg="white")
         self.l20.place(x=40,y=160)
 
         if(self.active[1]):
-            self.LuminanciaTunel = Button(self.master, text="Luminancia Tunel",width=16,height=3,highlightbackground='#336B87',command=self.reboot)
+            self.LuminanciaTunel = Button(self.master, text="Luminancia Tunel",width=16,height=3,highlightbackground='#336B87',bg=bgLuminanciaTunel,command=self.reboot)
             self.LuminanciaTunel.place(x=10,y=310)
-            self.configuraciónSecciones = Button(self.master, text="1.Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3))
+            self.configuraciónSecciones = Button(self.master, text="1.Configuración\nde secciones",width=12,height=3,command=lambda: self.recrear(3),bg="white")
             self.configuraciónSecciones.place(x=40,y=385)
 
         if(self.active[3]):        
-            self.distribucionLuminarias = Button(self.master, text="2.Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5))
+            self.distribucionLuminarias = Button(self.master, text="2.Distribución\n luminarias",width=12,height=3,command=lambda: self.recrear(5),bg="white")
             self.distribucionLuminarias.place(x=40,y=385+75)
 
 
@@ -486,11 +493,10 @@ class Ventana: #Se crea clase ventana la cual va realizar la interfaz gráfica.
         color1= '#336B87'.upper() #Color  botón
         over="#763626"
         self.master = master #Creando objeto (gráfica)
-        self.master.title("Lux Tunnel") #Nombre de ventana 
-        self.master.geometry("1400x650") #  Tamaño de ventana
+        self.master.title("LuxTunnel") #Nombre de ventana 
+        self.master.geometry("1400x700") #  Tamaño de ventana
         self.master['bg'] = '#2A3132'.upper() #Color de background
-        self.L20 = Button(master, text="L20",width=16,height=3,highlightbackground=color1,command=self.reboot)
-        self.L20.place(x=10,y=10)
+
         w = Canvas(master, width=1150, height=650)
         w.create_rectangle(0, 0, 1150, 650, fill="#90AFC5", outline = 'black')
         w.place(x=200,y=25)
